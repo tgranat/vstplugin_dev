@@ -8,7 +8,8 @@ namespace GgConvolver {
 	enum GgConvolverParams : ParamID
 	{
 		kBypassId = 100,
-		kParamLevelId = 101
+		kParamLevelId = 101,
+		kVuPPMId = 102
 		//kParamOnId = 1000
 	};
 

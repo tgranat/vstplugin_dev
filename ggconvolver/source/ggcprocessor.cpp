@@ -12,33 +12,32 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-//-----------------------------------------------------------------------------
 GgcProcessor::GgcProcessor ()
 {
 	// register its editor class
 	setControllerClass (GgConvolverControllerUID);
 }
 
-//-----------------------------------------------------------------------------
 tresult PLUGIN_API GgcProcessor::initialize (FUnknown* context)
 {
 	//---always initialize the parent-------
 	tresult result = AudioEffect::initialize (context);
 	if (result != kResultTrue)
+	{
 		return kResultFalse;
+	}
 
-	//---create Audio In/Out buses------
-	// we want a stereo Input and a Stereo Output
-	addAudioInput (STR16 ("AudioInput"), Vst::SpeakerArr::kStereo);
-	addAudioOutput (STR16 ("AudioOutput"), Vst::SpeakerArr::kStereo);
+	// Create Audio In/Out buses
+	// Having stereo Input and a Stereo Output
+	addAudioInput (STR16 ("AudioInput"), SpeakerArr::kStereo);
+	addAudioOutput (STR16 ("AudioOutput"), SpeakerArr::kStereo);
 
 	return kResultTrue;
 }
 
-//-----------------------------------------------------------------------------
-tresult PLUGIN_API GgcProcessor::setBusArrangements (Vst::SpeakerArrangement* inputs,
+tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
                                                             int32 numIns,
-                                                            Vst::SpeakerArrangement* outputs,
+                                                            SpeakerArrangement* outputs,
                                                             int32 numOuts)
 {
 	// we only support one in and output bus and these buses must have the same number of channels
@@ -49,31 +48,32 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (Vst::SpeakerArrangement* in
 	return kResultFalse;
 }
 
-//-----------------------------------------------------------------------------
-tresult PLUGIN_API GgcProcessor::setupProcessing (Vst::ProcessSetup& setup)
+// Called in disable state before setProcessing is called and processing will begin.
+// In setup you get for example information about sampleRate, processMode, maximum number of samples per audio block
+tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
-	// here you get, with setup, information about:
-	// sampleRate, processMode, maximum number of samples per audio block
+	// TODO: use samplerate if we need to re-sample the IR file
+	mSampleRate = setup.sampleRate;
 	return AudioEffect::setupProcessing (setup);
 }
 
-//-----------------------------------------------------------------------------
 tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
-	if (state) // Initialize
+	if (state) // Activate
 	{
 		// Allocate Memory Here
 		// Ex: algo.create ();
 	}
-	else // Release
+	else // Deactivate
 	{
 		// Free Memory if still allocated
 		// Ex: if(algo.isCreated ()) { algo.destroy (); }
 	}
+
+	// TODO: reset VU here?
 	return AudioEffect::setActive (state);
 }
 
-//-----------------------------------------------------------------------------
 tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 {
 	//--- Read inputs parameter changes-----------
@@ -185,6 +185,8 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 
 		}
 		else {
+			float vuPPM = 0.f;
+
 			if (mLevel < 0.0000001)
 			{
 				for (int32 i = 0; i < numChannels; i++)
@@ -195,8 +197,9 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					(1 << numChannels) - 1; // this will set to 1 all channels
 			}
 			else {
+				// Here we do stuff.
+				// Move this to a processAudio() function or something
 
-				// Move this to a processAudio() function
 
 				for (int32 i = 0; i < numChannels; i++)
 				{
@@ -205,11 +208,17 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 						Vst::Sample32* ptrIn = (Vst::Sample32*)inBuffer[i];
 						Vst::Sample32* ptrOut = (Vst::Sample32*)outBuffer[i];
 						Vst::Sample32 tmp;
+						
 						while (--samples >= 0)
 						{
 							// apply gain
 							tmp = (*ptrIn++) * mLevel;
 							(*ptrOut++) = tmp;
+
+							if (tmp > vuPPM)
+							{
+								vuPPM = tmp;
+							}
 						}
 					}
 					else {
@@ -222,14 +231,32 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 							// apply gain
 							tmp = (*ptrIn++) * mLevel;
 							(*ptrOut++) = tmp;
+
+							if (tmp > vuPPM)
+							{
+								vuPPM = tmp;
+							}
 						}
 					}
 				}
 			}
 
-			// Process Algorithm
-			// Ex: algo.process (data.inputs[0].channelBuffers32, data.outputs[0].channelBuffers32,
-			// data.numSamples);
+			// Write output parameter changes (VU)
+
+			IParameterChanges* outParamChanges = data.outputParameterChanges;
+			if (outParamChanges && mVuPPMOld != vuPPM)
+			{
+				int32 index = 0;
+				IParamValueQueue* paramQueue = outParamChanges->addParameterData(kVuPPMId, index);
+				if (paramQueue)
+				{
+					int32 index2 = 0;
+					paramQueue->addPoint(0, vuPPM, index2);
+				}
+			}
+			mVuPPMOld = vuPPM;
+
+			
 		
 		}
 	}
