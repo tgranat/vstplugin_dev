@@ -79,6 +79,8 @@ bool LevelParameter::fromString(const Vst::TChar* string, Vst::ParamValue& normV
 
 tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 {
+	// Using EditController. 
+	// Use EditControllerx1 to be able to create units (components) 
 	tresult result = EditController::initialize(context);
 	if (result == kResultTrue)
 	{
@@ -129,6 +131,18 @@ tresult PLUGIN_API GgcController::setComponentState(IBStream* state)
 
 	return kResultOk;
 }
+
+IPlugView* PLUGIN_API GgcController::createView(const char* name)
+{
+	// someone wants my editor
+	if (name && strcmp(name, "editor") == 0)
+	{
+		auto* view = new VSTGUI::VST3Editor(this, "view", "plug.uidesc");
+		return view;
+	}
+	return nullptr;
+}
+
 
 } // namespaces
 }

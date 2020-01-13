@@ -31,7 +31,7 @@ public:
 	}
 
 protected:
-	float mLevel = 1.f;
+	float mLevel = 0.5f;
 	bool mBypass = false; 
 	SampleRate mSampleRate = 44100.f;
 	float mVuPPMOld = 0.f;

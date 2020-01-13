@@ -3,13 +3,14 @@
 
 #pragma once
 
+#include "vstgui/plugin-bindings/vst3editor.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 
 namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-class GgcController : public EditController
+class GgcController : public EditController, public VSTGUI::VST3EditorDelegate
 {
 public:
 	// Create new instances of this controller. Required by plugin factory
@@ -21,6 +22,7 @@ public:
 
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
 	tresult PLUGIN_API setComponentState(IBStream* state) SMTG_OVERRIDE;
+	IPlugView* PLUGIN_API createView(const char* name) SMTG_OVERRIDE;
 };
 }
 }
