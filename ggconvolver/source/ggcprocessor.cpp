@@ -70,7 +70,8 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 		// Ex: if(algo.isCreated ()) { algo.destroy (); }
 	}
 
-		return AudioEffect::setActive (state);
+	// TODO: reset VU here?
+	return AudioEffect::setActive (state);
 }
 
 tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
@@ -92,7 +93,8 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				{	
 					
 					case GgConvolverParams::kParamLevelId:
-						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) == kResultTrue)
+						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
+							kResultTrue)
 							mLevel = (float)value * 2.0;  
 						break;
 					/*
@@ -103,7 +105,8 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 						break;
 					*/
 					case GgConvolverParams::kBypassId:
-						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) == kResultTrue)
+						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
+							kResultTrue)
 							mBypass = (value > 0.5f);
 						break;
 				}
