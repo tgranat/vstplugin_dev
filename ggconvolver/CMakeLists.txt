@@ -4,10 +4,25 @@ set(plug_sources
     include/plugids.h
     include/ggcprocessor.h
     include/version.h
+	include/WavUtils.h
     source/ggcfactory.cpp
     source/ggccontroller.cpp
     source/ggcprocessor.cpp
-
+	source/WavUtils.cpp
+    WDL/convoengine.h
+    WDL/denormal.h
+    WDL/fastqueue.h
+    WDL/fft.h
+    WDL/heapbuf.h
+    WDL/ptrlist.h
+    WDL/queue.h
+    WDL/resample.h
+    WDL/timing.h
+    WDL/wdltypes.h
+    WDL/convoengine.cpp
+    WDL/fft.c
+    WDL/resample.cpp
+    WDL/timing.c
 )
 
 #--- HERE change the target Name for your plug-in (for ex. set(target myDelay))-------

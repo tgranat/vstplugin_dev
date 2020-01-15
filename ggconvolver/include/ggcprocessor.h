@@ -4,6 +4,9 @@
 #pragma once
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
+#include "../WDL/convoengine.h"
+
+
 
 namespace Steinberg {
 namespace Vst {
@@ -31,10 +34,14 @@ public:
 	}
 
 protected:
+	WDL_ImpulseBuffer mImpulse;
+	WDL_ConvolutionEngine_Div mEngine;
 	float mLevel = 0.5f;
 	bool mBypass = false; 
 	SampleRate mSampleRate = 44100.f;
 	float mVuPPMOld = 0.f;
+
+
 };
 }
 }

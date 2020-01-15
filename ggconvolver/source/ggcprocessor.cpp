@@ -8,6 +8,7 @@
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 
 
+
 namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
@@ -61,8 +62,21 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
 	if (state) // Activate
 	{
-		// Allocate Memory Here
-		// Ex: algo.create ();
+		// ***Using sndfile causes difficult dependencies when buildin the plugin. Many dll's are needed
+		// ***causes build errors whrn copied to VST target
+		// Solution: implenment simple WAV-file reader
+
+		//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
+		//SndfileHandle irFile = SndfileHandle(irFileName);
+
+		//SNDFILE* sndfile;
+		//SF_INFO I;
+		//sndfile = sf_open(irFileName, SFM_READ, &I);
+		//sf_close(sndfile);
+
+		//sf_count_t irFrames = irFile.frames();
+		//std::vector<float> irBuffer(irFrames, 0);
+		//irFile.read(irBuffer.data(), irFrames);
 	}
 	else // Deactivate
 	{
