@@ -1,5 +1,8 @@
+#include <cassert>
+
 #include "../include/ggcprocessor.h"
 #include "../include/plugids.h"
+#include "../include/WavUtils.h"
 
 #include "public.sdk/source/vst/vstaudioprocessoralgo.h"
 
@@ -55,6 +58,26 @@ tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
 	// TODO: use samplerate if we need to re-sample the IR file
 	mSampleRate = setup.sampleRate;
+
+	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
+	// audioRead reads into a float (32 bit)
+	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
+	std::vector<float> irBuffer;
+	int sampleRate;
+	int numChannels;
+	audioRead(irFileName, irBuffer, sampleRate, numChannels);
+	size_t irFrames = irBuffer.size();
+	// Initiate 
+	mImpulse.SetNumChannels(1);
+	mImpulse.SetLength((int)irFrames);
+	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+	for (int i = 0; i < irFrames; ++i) {
+		dest[i] = (WDL_FFT_REAL)irBuffer[i];
+	}
+
+	mEngine.Reset();
+	mEngine.SetImpulse(&mImpulse);
+
 	return AudioEffect::setupProcessing (setup);
 }
 
@@ -62,35 +85,21 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
 	if (state) // Activate
 	{
-		// ***Using sndfile causes difficult dependencies when buildin the plugin. Many dll's are needed
-		// ***causes build errors whrn copied to VST target
-		// Solution: implenment simple WAV-file reader
-
-		//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
-		//SndfileHandle irFile = SndfileHandle(irFileName);
-
-		//SNDFILE* sndfile;
-		//SF_INFO I;
-		//sndfile = sf_open(irFileName, SFM_READ, &I);
-		//sf_close(sndfile);
-
-		//sf_count_t irFrames = irFile.frames();
-		//std::vector<float> irBuffer(irFrames, 0);
-		//irFile.read(irBuffer.data(), irFrames);
+		//
 	}
 	else // Deactivate
 	{
-		// Free Memory if still allocated
-		// Ex: if(algo.isCreated ()) { algo.destroy (); }
+		// 
 	}
 
-	// TODO: reset VU here?
+	//  reset VU here?
 	return AudioEffect::setActive (state);
 }
 
 tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 {
-	//--- Read inputs parameter changes-----------
+	// Read input parameter changes
+
 	if (data.inputParameterChanges)
 	{
 		int32 numParamsChanged = data.inputParameterChanges->getParameterCount();
@@ -128,43 +137,42 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 		}
 	}
 
-	//--- Process Audio---------------------
-	//--- ----------------------------------
+	// Process Audio
+
 	if (data.numInputs == 0 || data.numOutputs == 0)
 	{
 		// nothing to do
 		return kResultOk;
 	}
 
-	// (simplification) we suppose in this example that we have the same input channel count than
-	// the output
-	int32 numChannels = data.inputs[0].numChannels;
+	// - Assuming one input and one output audio bus
+	// - Assuming that we have the same number of input and output channels
 
-	//---get audio buffers----------------
+	int32 numChannels = data.inputs[0].numChannels; // eg 2
 
+	// Fetch audio buffers
 	// processSetup set in AudioEffect::setupProcess(). This class is derived from AudioEffect
 
 	// Get size of buffer in bytes
-	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples);
+	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples); // eg 128
 
 	// Audio buffer is Sample32[][] or Sample64[][]  (float or double). An array of arrays of samples.
 	// Typical buffer size 32 - 1024 samples
 	// A sample is one float or double for each channel (array of Sample32 or Sample64)
-	// Sample sometimes called a frame
-	// 
+	// Sample is sometimes called a frame
 
 	void** inBuffer = getChannelBuffersPointer(processSetup, data.inputs[0]);
 	void** outBuffer = getChannelBuffersPointer(processSetup, data.outputs[0]);
 
-	//---check if silence---------------
-// normally we have to check each channel (simplification)
+	// Check if input is marked as silent.
+
 	if (data.inputs[0].silenceFlags != 0)
 	{
 		// mark output silence too
 		data.outputs[0].silenceFlags = data.inputs[0].silenceFlags;
 
-		// the Plug-in has to be sure that if it sets the flags silence that the output buffer are
-		// clear
+		// If silent: clear the output buffer
+
 		for (int32 i = 0; i < numChannels; i++)
 		{
 			// do not need to be cleared if the buffers are the same (in this case input buffer are
@@ -175,17 +183,15 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 			}
 		}
 
-		// nothing to do at this point
 		return kResultOk;
 	}
 
-	// mark our outputs has not silent
+	// Mark outputs not silent
 	data.outputs[0].silenceFlags = 0;
 
-	if (data.numSamples > 0)
+	if (data.numSamples > 0)  // eg 32
 	{
-
-		//---in bypass mode outputs should be like inputs-----
+		// If bypass, copy input buffer to output buffer
 		if (mBypass)
 		{
 			for (int32 i = 0; i < numChannels; i++)
@@ -196,63 +202,87 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					memcpy(outBuffer[i], inBuffer[i], sampleFramesSize);
 				}
 			}
-
 		}
 		else {
 			float vuPPM = 0.f;
 
 			if (mLevel < 0.0000001)
 			{
+				// If very low input, clear output buffer and mark output as silent
 				for (int32 i = 0; i < numChannels; i++)
 				{
 					memset(outBuffer[i], 0, sampleFramesSize);
 				}
-				data.outputs[0].silenceFlags =
-					(1 << numChannels) - 1; // this will set to 1 all channels
+				// Set 1 to all channels. FIXME: the Arithmetic overflow  warning
+				data.outputs[0].silenceFlags = (1 << numChannels) - 1;
 			}
 			else {
-				// Here we do stuff.
-				// Move this to a processAudio() function or something
-
-
+				// Process the data
+				int32 samples = data.numSamples;
+				mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
+				//WDL_FFT_REAL** convolved = mEngine.Get();
+				// Available samples from convolver may be less than input samples
+				// according to convoengine.h. Not sure why or what the result will be.
+				// Investigate.
+				int blocksInConvoBuffer = min(mEngine.Avail(samples), samples);
+				
 				for (int32 i = 0; i < numChannels; i++)
 				{
-					if (data.symbolicSampleSize == Vst::SymbolicSampleSizes::kSample32) {
-						int32 samples = data.numSamples;
-						Vst::Sample32* ptrIn = (Vst::Sample32*)inBuffer[i];
-						Vst::Sample32* ptrOut = (Vst::Sample32*)outBuffer[i];
-						Vst::Sample32 tmp;
-						
-						while (--samples >= 0)
+					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
+					WDL_FFT_REAL* ptrIn = (WDL_FFT_REAL*)inBuffer[i];
+					// Convolved result only in left channel? Investigate.
+					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)mEngine.Get()[i];
+					WDL_FFT_REAL tmp;
+					while (--samples >= 0)
+					{
+						// apply gain
+						tmp = (*ptrConvolved++) * mLevel;
+						(*ptrOut++) = tmp;
+						if (tmp > vuPPM)
 						{
-							// apply gain
-							tmp = (*ptrIn++) * mLevel;
-							(*ptrOut++) = tmp;
+							vuPPM = tmp;
+						}
+					}				
+				}				
+				mEngine.Advance(blocksInConvoBuffer);
 
-							if (tmp > vuPPM)
-							{
-								vuPPM = tmp;
-							}
+				/*
+				for (int32 i = 0; i < numChannels; i++)
+				{
+					// Let WDL decide if it's 32 or 64 bit by using WDL_FFT_REAL
+					//if (data.symbolicSampleSize == Vst::SymbolicSampleSizes::kSample32) {
+					int32 samples = data.numSamples;
+
+					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
+					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)convolved[i];
+					WDL_FFT_REAL tmp;
+
+					WDL_FFT_REAL testbuffer[1][100];
+					memset(testbuffer, 0, sizeof testbuffer);
+
+
+					//mEngine.Add((WDL_FFT_REAL**)testbuffer[0], 10, 1);
+					mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
+
+					//WDL_FFT_REAL** convolved = mEngine.Get();
+
+					//WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)convolved[0];
+					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)inBuffer[i];
+					//int avail = min(mEngine.Avail(samples), samples);
+					while (--samples >= 0)
+					{
+						// apply gain
+						tmp = (*ptrConvolved++) * mLevel;
+						(*ptrOut++) = tmp;
+
+						if (tmp > vuPPM)
+						{
+							vuPPM = tmp;
 						}
 					}
-					else {
-						int32 samples = data.numSamples;
-						Vst::Sample64* ptrIn = (Vst::Sample64*)inBuffer[i];
-						Vst::Sample64* ptrOut = (Vst::Sample64*)outBuffer[i];
-						Vst::Sample64 tmp;
-						while (--samples >= 0)
-						{
-							// apply gain
-							tmp = (*ptrIn++) * mLevel;
-							(*ptrOut++) = tmp;
-
-							if (tmp > vuPPM)
-							{
-								vuPPM = tmp;
-							}
-						}
-					}
+					//mEngine.Advance(samples);
 				}
+				*/
 			}
 
 			// Write output parameter changes (VU)
@@ -269,9 +299,6 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				}
 			}
 			mVuPPMOld = vuPPM;
-
-			
-		
 		}
 	}
 	return kResultOk;
