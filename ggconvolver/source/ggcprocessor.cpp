@@ -56,7 +56,16 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
 // In setup you get for example information about sampleRate, processMode, maximum number of samples per audio block
 tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
-	// TODO: use samplerate if we need to re-sample the IR file
+	// TODO:
+	// 1)
+	// - Should this be in setActive() instead? 
+	// - Memory handling: can we free irBuffer memory?
+	// - Test with other sample rate
+	// - Implement re-sample of the IR file
+
+	// 2)
+	// - IR file name configurable
+
 	mSampleRate = setup.sampleRate;
 
 	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
@@ -153,7 +162,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	// - Assuming one input and one output audio bus
 	// - Assuming that we have the same number of input and output channels
 
-	int32 numChannels = data.inputs[0].numChannels; // eg 2
+	int32 numChannels = data.inputs[0].numChannels;
 
 	// Fetch audio buffers
 	// processSetup set in AudioEffect::setupProcess(). This class is derived from AudioEffect
@@ -164,7 +173,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	// Audio buffer is Sample32[][] or Sample64[][]  (float or double). An array of arrays of samples.
 	// Typical buffer size 32 - 1024 samples
 	// A sample is one float or double for each channel (array of Sample32 or Sample64)
-	// Sample is sometimes called a frame
+	// Sample can also be called a frame
 
 	void** inBuffer = getChannelBuffersPointer(processSetup, data.inputs[0]);
 	void** outBuffer = getChannelBuffersPointer(processSetup, data.outputs[0]);
@@ -194,7 +203,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	// Mark outputs not silent
 	data.outputs[0].silenceFlags = 0;
 
-	if (data.numSamples > 0)  // eg 32
+	if (data.numSamples > 0)
 	{
 		// If bypass, copy input buffer to output buffer
 		if (mBypass)
@@ -225,16 +234,16 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				// Process the data
 				int32 samples = data.numSamples;
 				mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
-				// Available samples from convolver may be less than input samples
+
+				// Note: Available samples from convolver may be less than input samples
 				// according to convoengine.h. Not sure why or what the result will be.
-				// Investigate.
+
 				int blocksInConvoBuffer = min(mEngine.Avail(samples), samples);
 				
 				for (int32 i = 0; i < numChannels; i++)
 				{
 					int32 sampleCounter = data.numSamples;
  					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
-					// Convolved result only in one channel? Investigate.
 					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)mEngine.Get()[i];
 					WDL_FFT_REAL tmp;
 					while (--sampleCounter >= 0)
@@ -250,43 +259,6 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				}				
 				mEngine.Advance(blocksInConvoBuffer);
 
-				/*
-				for (int32 i = 0; i < numChannels; i++)
-				{
-					// Let WDL decide if it's 32 or 64 bit by using WDL_FFT_REAL
-					//if (data.symbolicSampleSize == Vst::SymbolicSampleSizes::kSample32) {
-					int32 samples = data.numSamples;
-
-					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
-					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)convolved[i];
-					WDL_FFT_REAL tmp;
-
-					WDL_FFT_REAL testbuffer[1][100];
-					memset(testbuffer, 0, sizeof testbuffer);
-
-
-					//mEngine.Add((WDL_FFT_REAL**)testbuffer[0], 10, 1);
-					mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
-
-					//WDL_FFT_REAL** convolved = mEngine.Get();
-
-					//WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)convolved[0];
-					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)inBuffer[i];
-					//int avail = min(mEngine.Avail(samples), samples);
-					while (--samples >= 0)
-					{
-						// apply gain
-						tmp = (*ptrConvolved++) * mLevel;
-						(*ptrOut++) = tmp;
-
-						if (tmp > vuPPM)
-						{
-							vuPPM = tmp;
-						}
-					}
-					//mEngine.Advance(samples);
-				}
-				*/
 			}
 
 			// Write output parameter changes (VU)

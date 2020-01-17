@@ -1,3 +1,5 @@
 # my_vstplugin
-### My VST plugins
+## ggconvolver
+Simple VST3 impulse response plugin using the WDL convolver
+
 
