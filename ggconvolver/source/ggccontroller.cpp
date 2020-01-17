@@ -92,15 +92,22 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		// Use own Parameter class that display dB values for level instead of the range 0 to 1
 		// parameters.addParameter can also take a Parameter*
 
+		auto* pregainParam = new LevelParameter(Vst::ParameterInfo::kCanAutomate, kParamPregainId, 2.0);
+		parameters.addParameter(pregainParam);
+
+		// pregain parameter
 		auto* levelParam = new LevelParameter(Vst::ParameterInfo::kCanAutomate, kParamLevelId, 2.0);
 		parameters.addParameter(levelParam);
 
-		//---VuMeter parameter---
+
+		// VuMeter parameters
 		int32 stepCount = 0;
 		ParamValue defaultVal = 0;
 		int32 flags = ParameterInfo::kIsReadOnly;
-		int32 tag = kVuPPMId;
-		parameters.addParameter(STR16("VuPPM"), nullptr, stepCount, defaultVal, flags, tag);
+		int32 tag = kVuPregainId;
+		parameters.addParameter(STR16("VuPregain"), nullptr, stepCount, defaultVal, flags, tag);
+
+		parameters.addParameter(STR16("VuLevel"), nullptr, 0, 0, ParameterInfo::kIsReadOnly, kVuLevelId);
 
 	}
 	return kResultTrue;
@@ -115,6 +122,12 @@ tresult PLUGIN_API GgcController::setComponentState(IBStream* state)
 	}
 
 	IBStreamer streamer(state, kLittleEndian);
+
+	float savedPregain = 0.f;
+	if (streamer.readFloat(savedPregain) == false) {
+		return kResultFalse;
+	}
+	setParamNormalized(GgConvolverParams::kParamPregainId, savedPregain);
 
 	float savedLevel = 0.f;
 	if (streamer.readFloat(savedLevel) == false) {

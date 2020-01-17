@@ -56,41 +56,7 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
 // In setup you get for example information about sampleRate, processMode, maximum number of samples per audio block
 tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
-	// TODO:
-	// 1)
-	// - Should this be in setActive() instead? 
-	// - Memory handling: can we free irBuffer memory?
-	// - Test with other sample rate
-	// - Implement re-sample of the IR file
-
-	// 2)
-	// - IR file name configurable
-
 	mSampleRate = setup.sampleRate;
-
-	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
-	// audioRead reads into a float (32 bit)
-	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
-	std::vector<float> irBuffer;
-	int sampleRate;
-	int numChannels;
-	audioRead(irFileName, irBuffer, sampleRate, numChannels);
-	size_t irFrames = irBuffer.size();
-	// 
-	// SetLength creates IR buffer 
-	mImpulse.SetLength((int)irFrames); 
-	// Load IR
-	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-	for (int i = 0; i < irFrames; ++i) {
-		dest[i] = (WDL_FFT_REAL)irBuffer[i];
-	}
-	mImpulse.SetNumChannels(1);  // This is the default value
-
-	// Perhaps not necessary. Clears out samples in convolution engine.
-	mEngine.Reset();
-	// Tie IR to convolution engine
-	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
-	mEngine.SetImpulse(&mImpulse);
 
 	return AudioEffect::setupProcessing (setup);
 }
@@ -99,14 +65,45 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
 	if (state) // Activate
 	{
-		//
+		// TODO:
+	// 1)
+	// - Implement re-sample of the IR file. Now only 44100 kHz
+
+	// 2)
+	// - IR file name configurable
+
+		const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
+		//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
+			// audioRead reads into a float (32 bit)
+			// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
+		std::vector<float> irBuffer;
+		int sampleRate;
+		int numChannels;
+		audioRead(irFileName, irBuffer, sampleRate, numChannels);
+		size_t irFrames = irBuffer.size();
+		// 
+		// SetLength creates IR buffer 
+		mImpulse.SetLength((int)irFrames);
+		// Load IR
+		WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+		for (int i = 0; i < irFrames; ++i) {
+			dest[i] = (WDL_FFT_REAL)irBuffer[i];
+		}
+		mImpulse.SetNumChannels(1);  // This is the default value
+
+		// Perhaps not necessary. Clears out samples in convolution engine.
+		mEngine.Reset();
+		// Tie IR to convolution engine
+		// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
+		mEngine.SetImpulse(&mImpulse);
 	}
 	else // Deactivate
 	{
 		// 
 	}
 
-	//  reset VU here?
+	mVuLevelOld = 0.f;
+
 	return AudioEffect::setActive (state);
 }
 
@@ -127,13 +124,19 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				int32 sampleOffset;
 				int32 numPoints = paramQueue->getPointCount();
 				switch (paramQueue->getParameterId())
-				{	
-					
+				{					
 					case GgConvolverParams::kParamLevelId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
 							mLevel = (float)value * 1.0f;  
 						break;
+
+					case GgConvolverParams::kParamPregainId:
+						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
+							kResultTrue)
+							mPregain = (float)value * 1.0f;
+						break;
+
 					/*
 					case TestPluginParams::kParamOnId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
@@ -170,10 +173,8 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	// Get size of buffer in bytes
 	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples); // eg 128
 
-	// Audio buffer is Sample32[][] or Sample64[][]  (float or double). An array of arrays of samples.
-	// Typical buffer size 32 - 1024 samples
-	// A sample is one float or double for each channel (array of Sample32 or Sample64)
-	// Sample can also be called a frame
+	// Audio buffer is Sample32[][] or Sample64[][] (float or double). An array of arrays of samples.
+	// Typical buffer size 32 - 1024 samples (also called frames)
 
 	void** inBuffer = getChannelBuffersPointer(processSetup, data.inputs[0]);
 	void** outBuffer = getChannelBuffersPointer(processSetup, data.outputs[0]);
@@ -218,9 +219,10 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 			}
 		}
 		else {
-			float vuPPM = 0.f;
+			float vuLevel = 0.f;
+			float vuPregain = 0.f;
 
-			if (mLevel < 0.0000001)
+			if (mLevel < 0.0000001 || mPregain < 0.0000001)
 			{
 				// If very low input, clear output buffer and mark output as silent
 				for (int32 i = 0; i < numChannels; i++)
@@ -233,7 +235,22 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 			else {
 				// Process the data
 				int32 samples = data.numSamples;
-				mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
+				// Pre-gain adjust. Using output buffer as temporary buffer
+				for (int32 i = 0; i < numChannels; i++)
+				{
+					int32 sampleCounter = data.numSamples;
+					WDL_FFT_REAL* ptrIn = (WDL_FFT_REAL*)inBuffer[i];
+					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
+					WDL_FFT_REAL tmp;
+					while (--sampleCounter >= 0)
+					{
+						// apply pre-gain
+						tmp = (*ptrIn++) * mPregain;
+						(*ptrOut++) = tmp;
+					}
+				}
+				// outBuffer is buffer adjusted with pre-gain
+				mEngine.Add((WDL_FFT_REAL**)outBuffer, samples, numChannels);
 
 				// Note: Available samples from convolver may be less than input samples
 				// according to convoengine.h. Not sure why or what the result will be.
@@ -248,33 +265,52 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					WDL_FFT_REAL tmp;
 					while (--sampleCounter >= 0)
 					{
+						// VU meter after input+IR but before level
+						tmp = *ptrConvolved;
+						if (tmp > vuPregain)
+						{
+							vuPregain = tmp;
+						}
+
 						// apply gain
+
 						tmp = (*ptrConvolved++) * mLevel;
 						(*ptrOut++) = tmp;
-						if (tmp > vuPPM)
+						// VU meter after level
+						if (tmp > vuLevel)
 						{
-							vuPPM = tmp;
+							vuLevel = tmp;
 						}
 					}				
 				}				
 				mEngine.Advance(blocksInConvoBuffer);
-
 			}
 
 			// Write output parameter changes (VU)
 
 			IParameterChanges* outParamChanges = data.outputParameterChanges;
-			if (outParamChanges && mVuPPMOld != vuPPM)
+			if (outParamChanges && mVuLevelOld != vuLevel)
 			{
 				int32 index = 0;
-				IParamValueQueue* paramQueue = outParamChanges->addParameterData(kVuPPMId, index);
+				IParamValueQueue* paramQueue = outParamChanges->addParameterData(kVuLevelId, index);
 				if (paramQueue)
 				{
 					int32 index2 = 0;
-					paramQueue->addPoint(0, vuPPM, index2);
+					paramQueue->addPoint(0, vuLevel, index2);
 				}
 			}
-			mVuPPMOld = vuPPM;
+			if (outParamChanges && mVuPregainOld != vuPregain)
+			{
+				int32 index = 0;
+				IParamValueQueue* paramQueue = outParamChanges->addParameterData(kVuPregainId, index);
+				if (paramQueue)
+				{
+					int32 index2 = 0;
+					paramQueue->addPoint(0, vuPregain, index2);
+				}
+			}
+			mVuLevelOld = vuLevel;
+			mVuPregainOld = vuPregain;
 		}
 	}
 	return kResultOk;
@@ -293,17 +329,17 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 	float savedLevel = 0.f;
 	if (streamer.readFloat (savedLevel) == false)
 		return kResultFalse;
-	/*
-	int32 savedParam2 = 0;
-	if (streamer.readInt32 (savedParam2) == false)
+
+	float savedPregain = 0.f;
+	if (streamer.readFloat(savedPregain) == false)
 		return kResultFalse;
-	*/
+
 	int32 savedBypass = 0;
 	if (streamer.readInt32 (savedBypass) == false)
 		return kResultFalse;
 
 	mLevel = savedLevel;
-	//mParam2 = savedParam2 > 0 ? 1 : 0;
+	mPregain = savedPregain;
 	mBypass = savedBypass > 0;
 
 	return kResultOk;
@@ -315,12 +351,13 @@ tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 	// here we need to save the model (preset or project)
 
 	float toSaveLevel = mLevel;
-	//int32 toSaveParam2 = mParam2;
+	float toSavePregain = mPregain;
 	int32 toSaveBypass = mBypass ? 1 : 0;
 
 	IBStreamer streamer (state, kLittleEndian);
+
 	streamer.writeFloat (toSaveLevel);
-	//streamer.writeInt32 (toSaveParam2);
+	streamer.writeFloat(toSavePregain);
 	streamer.writeInt32 (toSaveBypass);
 
 	return kResultOk;

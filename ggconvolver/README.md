@@ -3,6 +3,16 @@ A simple VST3 plugin to load a single impulse response file.
 
 Work in progress
 
+### Build
+
+See https://steinbergmedia.github.io/vst3_doc/vstinterfaces/cmakeUse.html
+
+Right now I'm using Visual Studio. To create a VS solution I run:
+```
+cmake -G"Visual Studio 16 2019" -Ax64 -DSMTG_MYPLUGINS_SRC_PATH=C:/<where I have my source code> ../
+```
+
+
 ### WDL Convolution Engine
 
 I'm using the WDL convolution engine from https://www.cockos.com/wdl/.

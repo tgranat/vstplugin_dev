@@ -9,7 +9,9 @@ namespace GgConvolver {
 	{
 		kBypassId = 100,
 		kParamLevelId = 101,
-		kVuPPMId = 102
+		kParamPregainId = 102,
+		kVuLevelId = 103,
+		kVuPregainId = 104
 		//kParamOnId = 1000
 	};
 
