@@ -1,7 +1,7 @@
 # GGConvolver
 A simple VST3 plugin to load a single impulse response file.
 
-Work in progress
+Work in progress. IR file hardcoded value.
 
 ### Build
 

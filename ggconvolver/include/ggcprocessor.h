@@ -17,7 +17,7 @@ class GgcProcessor : public Vst::AudioEffect
 public:
 	GgcProcessor();
 
-	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
+	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;	
 	tresult PLUGIN_API setBusArrangements(SpeakerArrangement* inputs,
 		int32 numIns,
 		SpeakerArrangement* outputs,
@@ -32,6 +32,10 @@ public:
 	{
 		return (IAudioProcessor*)new GgcProcessor();
 	}
+
+#if WDL_FFT_REALSIZE == 8
+	tresult PLUGIN_API canProcessSampleSize(int32 symbolicSampleSize) SMTG_OVERRIDE;
+#endif
 
 protected:
 	WDL_ImpulseBuffer mImpulse;

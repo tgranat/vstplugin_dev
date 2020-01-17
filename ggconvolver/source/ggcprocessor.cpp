@@ -1,3 +1,10 @@
+// Simple convolver VST3 plugin 
+// Processor part
+
+// Using the WDL convolver engine https://www.cockos.com/wdl/
+// To build for 32 bit, update fft.h and set WDL_FFT_REALSIZE to 4
+// To build for 64 bit, update fft.h and set WDL_FFT_REALSIZE to 8
+
 #include <cassert>
 
 #include "../include/ggcprocessor.h"
@@ -39,6 +46,15 @@ tresult PLUGIN_API GgcProcessor::initialize (FUnknown* context)
 	return kResultTrue;
 }
 
+// Tell VST host that we handle 64 bit (otherwise, we shouldn't answer, due to some peculiarity in VST3 implementation/build)
+
+#if WDL_FFT_REALSIZE == 8
+tresult PLUGIN_API GgcProcessor::canProcessSampleSize(int32 symbolicSampleSize)
+{
+	return kResultTrue;
+}
+#endif
+
 tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
                                                             int32 numIns,
                                                             SpeakerArrangement* outputs,
@@ -56,7 +72,43 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
 // In setup you get for example information about sampleRate, processMode, maximum number of samples per audio block
 tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
+	// TODO:
+// 1)
+// - Implement re-sample of the IR file. Now only 44100 kHz
+
+// 2)
+// - IR file name configurable
+
 	mSampleRate = setup.sampleRate;
+
+	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
+	//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
+	// audioRead reads into a float (32 bit)
+	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
+	std::vector<float> irBuffer;
+	int sampleRate;
+	int numChannels;
+	audioRead(irFileName, irBuffer, sampleRate, numChannels);
+	size_t irFrames = irBuffer.size();
+
+	if (mSampleRate != sampleRate) {
+		// Resample IR
+	}
+	// 
+	// SetLength creates IR buffer 
+	mImpulse.SetLength((int)irFrames);
+	// Load IR
+	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+	for (int i = 0; i < irFrames; ++i) {
+		dest[i] = (WDL_FFT_REAL)irBuffer[i];
+	}
+	mImpulse.SetNumChannels(1);  // This is the default value
+
+	// Perhaps not necessary. Clears out samples in convolution engine.
+	mEngine.Reset();
+	// Tie IR to convolution engine
+	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
+	mEngine.SetImpulse(&mImpulse);
 
 	return AudioEffect::setupProcessing (setup);
 }
@@ -65,37 +117,7 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
 	if (state) // Activate
 	{
-		// TODO:
-	// 1)
-	// - Implement re-sample of the IR file. Now only 44100 kHz
-
-	// 2)
-	// - IR file name configurable
-
-		const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
-		//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
-			// audioRead reads into a float (32 bit)
-			// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
-		std::vector<float> irBuffer;
-		int sampleRate;
-		int numChannels;
-		audioRead(irFileName, irBuffer, sampleRate, numChannels);
-		size_t irFrames = irBuffer.size();
-		// 
-		// SetLength creates IR buffer 
-		mImpulse.SetLength((int)irFrames);
-		// Load IR
-		WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-		for (int i = 0; i < irFrames; ++i) {
-			dest[i] = (WDL_FFT_REAL)irBuffer[i];
-		}
-		mImpulse.SetNumChannels(1);  // This is the default value
-
-		// Perhaps not necessary. Clears out samples in convolution engine.
-		mEngine.Reset();
-		// Tie IR to convolution engine
-		// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
-		mEngine.SetImpulse(&mImpulse);
+		//
 	}
 	else // Deactivate
 	{
