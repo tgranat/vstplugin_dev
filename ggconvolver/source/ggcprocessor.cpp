@@ -67,15 +67,20 @@ tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 	int numChannels;
 	audioRead(irFileName, irBuffer, sampleRate, numChannels);
 	size_t irFrames = irBuffer.size();
-	// Initiate 
-	mImpulse.SetNumChannels(1);
-	mImpulse.SetLength((int)irFrames);
+	// 
+	// SetLength creates IR buffer 
+	mImpulse.SetLength((int)irFrames); 
+	// Load IR
 	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
 	for (int i = 0; i < irFrames; ++i) {
 		dest[i] = (WDL_FFT_REAL)irBuffer[i];
 	}
+	mImpulse.SetNumChannels(1);  // This is the default value
 
+	// Perhaps not necessary. Clears out samples in convolution engine.
 	mEngine.Reset();
+	// Tie IR to convolution engine
+	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
 	mEngine.SetImpulse(&mImpulse);
 
 	return AudioEffect::setupProcessing (setup);
@@ -118,7 +123,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					case GgConvolverParams::kParamLevelId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mLevel = (float)value * 2.0;  
+							mLevel = (float)value * 1.0f;  
 						break;
 					/*
 					case TestPluginParams::kParamOnId:
@@ -220,7 +225,6 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				// Process the data
 				int32 samples = data.numSamples;
 				mEngine.Add((WDL_FFT_REAL**)inBuffer, samples, numChannels);
-				//WDL_FFT_REAL** convolved = mEngine.Get();
 				// Available samples from convolver may be less than input samples
 				// according to convoengine.h. Not sure why or what the result will be.
 				// Investigate.
@@ -228,12 +232,12 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				
 				for (int32 i = 0; i < numChannels; i++)
 				{
-					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
-					WDL_FFT_REAL* ptrIn = (WDL_FFT_REAL*)inBuffer[i];
-					// Convolved result only in left channel? Investigate.
+					int32 sampleCounter = data.numSamples;
+ 					WDL_FFT_REAL* ptrOut = (WDL_FFT_REAL*)outBuffer[i];
+					// Convolved result only in one channel? Investigate.
 					WDL_FFT_REAL* ptrConvolved = (WDL_FFT_REAL*)mEngine.Get()[i];
 					WDL_FFT_REAL tmp;
-					while (--samples >= 0)
+					while (--sampleCounter >= 0)
 					{
 						// apply gain
 						tmp = (*ptrConvolved++) * mLevel;
