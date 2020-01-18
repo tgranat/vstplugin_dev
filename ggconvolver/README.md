@@ -39,4 +39,10 @@ Copyright (C) 2005 and later Cockos Incorporated
     2. Altered source versions must be plainly marked as such, and must not be
        misrepresented as being the original software.
     3. This notice may not be removed or altered from any source distribution.
-``
+```
+### Reading of Wav files
+
+Using code by Gerry Beauregard from his presentation Audio DSP Basics. A simple Wav file read/write utility.
+
+https://www.dropbox.com/s/s0ba5y932glm4ld/2016-06_MusicTech.zip
+
