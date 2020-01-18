@@ -24,7 +24,7 @@ private:
 	float adjust;
 };
 
-LevelParameter::LevelParameter(int32 flags, int32 id, float levelAdjust = 1)
+LevelParameter::LevelParameter(int32 flags, int32 id, float levelAdjust = 1.0f)
 {
 	UString(info.title, USTRINGSIZE(info.title)).assign(USTRING("Level"));
 	UString(info.units, USTRINGSIZE(info.units)).assign(USTRING("dB"));

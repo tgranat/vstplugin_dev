@@ -6,6 +6,7 @@
 // To build for 64 bit, update fft.h and set WDL_FFT_REALSIZE to 8
 
 #include <cassert>
+#include <fstream> 
 
 #include "../include/ggcprocessor.h"
 #include "../include/plugids.h"
@@ -73,25 +74,23 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
 tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
 	// TODO:
-// 1)
-// - Implement re-sample of the IR file. Now only 44100 kHz
 
-// 2)
+// - Implement re-sample of the IR file.
 // - IR file name configurable
 
-	mSampleRate = setup.sampleRate;
+	mIncomingAudioSampleRate = setup.sampleRate;
 
-	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion.wav";
+	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
 	//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
 	// audioRead reads into a float (32 bit)
-	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin
+	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
 	std::vector<float> irBuffer;
-	int sampleRate;
+	int sampleRateIRFile;
 	int numChannels;
-	audioRead(irFileName, irBuffer, sampleRate, numChannels);
+	audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
 	size_t irFrames = irBuffer.size();
 
-	if (mSampleRate != sampleRate) {
+	if (mIncomingAudioSampleRate != sampleRateIRFile) {
 		// Resample IR
 	}
 	// 
@@ -102,7 +101,7 @@ tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 	for (int i = 0; i < irFrames; ++i) {
 		dest[i] = (WDL_FFT_REAL)irBuffer[i];
 	}
-	mImpulse.SetNumChannels(1);  // This is the default value
+	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
 
 	// Perhaps not necessary. Clears out samples in convolution engine.
 	mEngine.Reset();
@@ -150,13 +149,13 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					case GgConvolverParams::kParamLevelId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mLevel = (float)value * 1.0f;  
+							mLevel = (float)value * 2.0f;  
 						break;
 
 					case GgConvolverParams::kParamPregainId:
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mPregain = (float)value * 1.0f;
+							mPregain = (float)value * 2.0f;
 						break;
 
 					/*

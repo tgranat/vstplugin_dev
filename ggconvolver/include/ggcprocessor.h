@@ -43,7 +43,7 @@ protected:
 	float mLevel = 0.5f;
 	float mPregain = 0.5f;
 	bool mBypass = false; 
-	SampleRate mSampleRate = 44100.f;
+	SampleRate mIncomingAudioSampleRate = 44100.f;
 	float mVuLevelOld = 0.f;
 	float mVuPregainOld = 0.f;
 
