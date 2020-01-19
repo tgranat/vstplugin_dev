@@ -18,8 +18,6 @@
 #include "pluginterfaces/base/ibstream.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 
-
-
 namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
@@ -47,7 +45,7 @@ tresult PLUGIN_API GgcProcessor::initialize (FUnknown* context)
 	return kResultTrue;
 }
 
-// Tell VST host that we handle 64 bit (otherwise, we shouldn't answer, due to some peculiarity in VST3 implementation/build)
+// Tell VST host that we handle 64 bit (otherwise, we dont't answer)
 
 #if WDL_FFT_REALSIZE == 8
 tresult PLUGIN_API GgcProcessor::canProcessSampleSize(int32 symbolicSampleSize)
@@ -73,50 +71,57 @@ tresult PLUGIN_API GgcProcessor::setBusArrangements (SpeakerArrangement* inputs,
 // In setup you get for example information about sampleRate, processMode, maximum number of samples per audio block
 tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
-	// TODO:
-
-// - Implement re-sample of the IR file.
-// - IR file name configurable
-
 	mIncomingAudioSampleRate = setup.sampleRate;
 
-	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
-	//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
-	// audioRead reads into a float (32 bit)
-	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
-	std::vector<float> irBuffer;
-	int sampleRateIRFile;
-	int numChannels;
-	audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
-	size_t irFrames = irBuffer.size();
-
-	if (mIncomingAudioSampleRate != sampleRateIRFile) {
-		// Resample IR
-	}
-	// 
-	// SetLength creates IR buffer 
-	mImpulse.SetLength((int)irFrames);
-	// Load IR
-	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-	for (int i = 0; i < irFrames; ++i) {
-		dest[i] = (WDL_FFT_REAL)irBuffer[i];
-	}
-	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
-
-	// Perhaps not necessary. Clears out samples in convolution engine.
-	mEngine.Reset();
-	// Tie IR to convolution engine
-	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
-	mEngine.SetImpulse(&mImpulse);
 
 	return AudioEffect::setupProcessing (setup);
 }
 
 tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
+	// TODO:
+
+// - Implement re-sample of the IR file.
+// - IR file name configurable. Or something
+	// How can IR files be loaded dynamically?
+
 	if (state) // Activate
 	{
-		//
+		initiateConvolutionEngine();
+
+
+		/*
+		//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/Studio_Nord_Plate_3sec.wav";
+		const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
+		//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
+		// audioRead reads into a float (32 bit)
+		// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
+		std::vector<float> irBuffer;
+		int sampleRateIRFile;
+		int numChannels;
+
+		audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
+		size_t irFrames = irBuffer.size();
+
+		if (mIncomingAudioSampleRate != sampleRateIRFile) {
+			// Resample IR
+		}
+		// 
+		// SetLength creates IR buffer 
+		mImpulse.SetLength((int)irFrames);
+		// Load IR
+		WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+		for (int i = 0; i < irFrames; ++i) {
+			dest[i] = (WDL_FFT_REAL)irBuffer[i];
+		}
+		mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
+
+		// Perhaps not necessary. Clears out samples in convolution engine.
+		mEngine.Reset();
+		// Tie IR to convolution engine
+		// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
+		mEngine.SetImpulse(&mImpulse);
+		*/
 	}
 	else // Deactivate
 	{
@@ -130,6 +135,9 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 
 tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 {
+	// For each processing block the host should provide information about its state, for example sample rate
+	// ProcessContect data.processContext 
+
 	// Read input parameter changes
 
 	if (data.inputParameterChanges)
@@ -153,6 +161,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 						break;
 
 					case GgConvolverParams::kParamPregainId:
+						// initiateConvolutionEngine(); // TEST init IR in process()
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
 							mPregain = (float)value * 2.0f;
@@ -173,10 +182,17 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				}
 			}
 		}
+
+
+
+
+
 	}
 
 	// Process Audio
 
+	// Check if called without buffers (numInputs and numOutputs are zeroed), in order to flush parameters.
+	// Parameters flush could happen only when the host needs to send parameter changes and no processing is called. 
 	if (data.numInputs == 0 || data.numOutputs == 0)
 	{
 		// nothing to do
@@ -192,10 +208,10 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	// processSetup set in AudioEffect::setupProcess(). This class is derived from AudioEffect
 
 	// Get size of buffer in bytes
-	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples); // eg 128
+	uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples);
 
 	// Audio buffer is Sample32[][] or Sample64[][] (float or double). An array of arrays of samples.
-	// Typical buffer size 32 - 1024 samples (also called frames)
+	// Typical buffer size 16 - 1024 samples (also called frames).
 
 	void** inBuffer = getChannelBuffersPointer(processSetup, data.inputs[0]);
 	void** outBuffer = getChannelBuffersPointer(processSetup, data.outputs[0]);
@@ -366,7 +382,6 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 	return kResultOk;
 }
 
-//------------------------------------------------------------------------
 tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 {
 	// here we need to save the model (preset or project)
@@ -384,7 +399,45 @@ tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 	return kResultOk;
 }
 
-//------------------------------------------------------------------------
+void GgcProcessor::initiateConvolutionEngine()
+{
+	// if IR is reloaded, is it enough to just update the buffer in mImpulse? It should be
+
+	//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/Studio_Nord_Plate_3sec.wav";
+	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
+	//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
+	// audioRead reads into a float (32 bit)
+	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
+	
+	// Assuming only one channel in IR file
+	
+	std::vector<float> irBuffer;
+	int sampleRateIRFile;
+	int numChannels;
+
+	audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
+	size_t irFrames = irBuffer.size();
+
+	if (mIncomingAudioSampleRate != sampleRateIRFile) {
+		// Resample IR
+	}
+	// 
+	// SetLength creates IR buffer 
+	mImpulse.SetLength((int)irFrames);
+	// Load IR
+	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+	for (int i = 0; i < irFrames; ++i) {
+		dest[i] = (WDL_FFT_REAL)irBuffer[i];
+	}
+	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
+
+	// Perhaps not necessary. Clears out samples in convolution engine.
+	mEngine.Reset();
+	// Tie IR to convolution engine
+	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
+	mEngine.SetImpulse(&mImpulse);
+}
+
 } 
 } 
 }

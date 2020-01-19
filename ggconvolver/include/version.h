@@ -25,13 +25,13 @@
 // HERE you have to define your plug-in, company name, email and web
 #define stringPluginName		"IR Plugin"
 
-#define stringOriginalFilename	"irplugin.vst3"
+#define stringOriginalFilename	"ggconvolver.vst3"
 #if SMTG_PLATFORM_64
 #define stringFileDescription	stringPluginName" VST3-SDK (64Bit)"
 #else
 #define stringFileDescription	stringPluginName" VST3-SDK"
 #endif
-#define stringCompanyName		"Granat Guitar\0"
+#define stringCompanyName		"GranatGuitar\0"
 #define stringCompanyWeb		"https://granatguitar.com"
 #define stringCompanyEmail		"mailto:info@granatguitar.com"
 

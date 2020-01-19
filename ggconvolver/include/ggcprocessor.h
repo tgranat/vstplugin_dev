@@ -47,6 +47,8 @@ protected:
 	float mVuLevelOld = 0.f;
 	float mVuPregainOld = 0.f;
 
+private:
+	void initiateConvolutionEngine();
 
 };
 }

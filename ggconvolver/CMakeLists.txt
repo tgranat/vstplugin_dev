@@ -41,6 +41,7 @@ smtg_add_vst3_resource(${target} "resource/slider_handle.png")
 smtg_add_vst3_resource(${target} "resource/slider_handle_2.0x.png")
 smtg_add_vst3_resource(${target} "resource/vu_on.png")
 smtg_add_vst3_resource(${target} "resource/vu_off.png")
+
 if(SMTG_MAC)
     smtg_set_bundle(${target} INFOPLIST "${CMAKE_CURRENT_LIST_DIR}/resource/Info.plist" PREPROCESS)
 elseif(SMTG_WIN)
