@@ -10,6 +10,7 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
+// Processor part
 class GgcProcessor : public Vst::AudioEffect
 {
 public:
@@ -49,6 +50,7 @@ private:
 	void initiateConvolutionEngine();
 
 	static const std::vector<float> mCelestian_v30_48kHz_1ch_200ms;
+	static const std::vector<float> mMelestion_v60_412_room_48kHz_1ch_200ms;
 };
 }
 }

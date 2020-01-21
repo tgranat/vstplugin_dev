@@ -10,7 +10,7 @@
 
 #include "../include/ggcprocessor.h"
 #include "../include/plugids.h"
-// #include "../include/WavUtils.h"  used if we read IR from file
+// #include "../include/WavUtils.h"  // only used if we read IR from file
 
 #include "public.sdk/source/vst/vstaudioprocessoralgo.h"
 
