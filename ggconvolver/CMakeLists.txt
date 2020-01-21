@@ -1,10 +1,13 @@
 
 set(plug_sources
+    include/dbparameter.h
     include/ggccontroller.h
     include/plugids.h
     include/ggcprocessor.h
     include/version.h
 	include/WavUtils.h
+	include/celestion_v30_48kHz_200ms.h
+    source/dbparameter.cpp
     source/ggcfactory.cpp
     source/ggccontroller.cpp
     source/ggcprocessor.cpp

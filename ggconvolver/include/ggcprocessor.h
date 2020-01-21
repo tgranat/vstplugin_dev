@@ -6,7 +6,7 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../WDL/convoengine.h"
 
-
+#define MAX_IR_SIZE 20000
 
 namespace Steinberg {
 namespace Vst {
@@ -50,6 +50,7 @@ protected:
 private:
 	void initiateConvolutionEngine();
 
+	static const std::vector<float> mCelestian_v30_48kHz_200ms;
 };
 }
 }

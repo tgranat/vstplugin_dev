@@ -10,7 +10,7 @@
 
 #include "../include/ggcprocessor.h"
 #include "../include/plugids.h"
-#include "../include/WavUtils.h"
+// #include "../include/WavUtils.h"  used if we read IR from file
 
 #include "public.sdk/source/vst/vstaudioprocessoralgo.h"
 
@@ -18,9 +18,15 @@
 #include "pluginterfaces/base/ibstream.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 
+
 namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
+
+const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_200ms =
+{
+	#include "../include/celestion_v30_48kHz_200ms.h"
+};
 
 GgcProcessor::GgcProcessor ()
 {
@@ -403,31 +409,34 @@ void GgcProcessor::initiateConvolutionEngine()
 {
 	// if IR is reloaded, is it enough to just update the buffer in mImpulse? It should be
 
-	//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/Studio_Nord_Plate_3sec.wav";
-	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
-	//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
+	// This part is if you read from file
+
+	// const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
 	// audioRead reads into a float (32 bit)
 	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
 	
 	// Assuming only one channel in IR file
 	
-	std::vector<float> irBuffer;
-	int sampleRateIRFile;
-	int numChannels;
+	//std::vector<float> irBuffer;
+	//int sampleRateIRFile;
+	//int numChannels;
 
-	audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
-	size_t irFrames = irBuffer.size();
+	//audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
+	//size_t irFrames = irBuffer.size();
 
-	if (mIncomingAudioSampleRate != sampleRateIRFile) {
+	//if (mIncomingAudioSampleRate != sampleRateIRFile) {
 		// Resample IR
-	}
-	// 
+	//}
+
+	// End of out-commented read file part
+	
 	// SetLength creates IR buffer 
+	int irFrames = mCelestian_v30_48kHz_200ms.size();
 	mImpulse.SetLength((int)irFrames);
 	// Load IR
 	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
 	for (int i = 0; i < irFrames; ++i) {
-		dest[i] = (WDL_FFT_REAL)irBuffer[i];
+		dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_200ms[i];
 	}
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
 
@@ -437,6 +446,7 @@ void GgcProcessor::initiateConvolutionEngine()
 	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
 	mEngine.SetImpulse(&mImpulse);
 }
+
 
 } 
 } 
