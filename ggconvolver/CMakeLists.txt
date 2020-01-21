@@ -7,6 +7,7 @@ set(plug_sources
     include/version.h
 	include/WavUtils.h
 	include/celestion_v30_48kHz_200ms.h
+    include/celestion_v60_412_room_48kHz_1ch_200ms.h
     source/dbparameter.cpp
     source/ggcfactory.cpp
     source/ggccontroller.cpp
