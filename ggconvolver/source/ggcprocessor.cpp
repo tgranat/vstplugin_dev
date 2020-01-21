@@ -23,7 +23,7 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_200ms =
+const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_1ch_200ms =
 {
 	#include "../include/celestion_v30_48kHz_200ms.h"
 };
@@ -431,12 +431,12 @@ void GgcProcessor::initiateConvolutionEngine()
 	// End of out-commented read file part
 	
 	// SetLength creates IR buffer 
-	int irFrames = mCelestian_v30_48kHz_200ms.size();
+	int irFrames = mCelestian_v30_48kHz_1ch_200ms.size();
 	mImpulse.SetLength((int)irFrames);
 	// Load IR
 	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
 	for (int i = 0; i < irFrames; ++i) {
-		dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_200ms[i];
+		dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_1ch_200ms[i];
 	}
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
 
