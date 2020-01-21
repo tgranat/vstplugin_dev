@@ -5,6 +5,10 @@
 
 #include "public.sdk/source/vst/vsteditcontroller.h"
 
+namespace Steinberg {
+namespace Vst {
+namespace GgConvolver {
+
 class DbParameter : public Steinberg::Vst::Parameter
 {
 public:
@@ -14,3 +18,6 @@ public:
 private:
 	float adjust;
 };
+}
+}
+}

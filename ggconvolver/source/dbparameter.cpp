@@ -1,6 +1,10 @@
 #include "../include/dbparameter.h"
 #include <pluginterfaces\base\ustring.h>
 
+namespace Steinberg {
+namespace Vst {
+namespace GgConvolver {
+
 DbParameter::DbParameter(Steinberg::int32 flags, Steinberg::int32 id, float levelAdjust = 1.0f)
 {
 	Steinberg::UString(info.title, USTRINGSIZE(info.title)).assign(USTRING("Level"));
@@ -49,4 +53,8 @@ bool DbParameter::fromString(const Steinberg::Vst::TChar* string, Steinberg::Vst
 		return true;
 	}
 	return false;
+}
+
+}
+}
 }
