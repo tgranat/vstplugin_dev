@@ -5,6 +5,7 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../WDL/convoengine.h"
+#include "../WDL/resample.h"
 
 namespace Steinberg {
 namespace Vst {
@@ -39,18 +40,22 @@ public:
 protected:
 	WDL_ImpulseBuffer mImpulse;
 	WDL_ConvolutionEngine_Div mEngine;
+	WDL_Resampler mResampler;
 	float mLevel = 0.5f;
 	float mPregain = 0.5f;
 	bool mBypass = false; 
-	SampleRate mIncomingAudioSampleRate = 44100.f;
+	SampleRate mIncomingAudioSampleRate = 48000.f;
 	float mVuLevelOld = 0.f;
 	float mVuPregainOld = 0.f;
+
 
 private:
 	void initiateConvolutionEngine();
 
 	static const std::vector<float> mCelestian_v30_48kHz_1ch_200ms;
-	static const std::vector<float> mMelestion_v60_412_room_48kHz_1ch_200ms;
+	static const std::vector<float> m412_sm57_off_axis_44100Hz_1ch;
+
+	static const int mResamplerBlockLength = 64;
 };
 }
 }

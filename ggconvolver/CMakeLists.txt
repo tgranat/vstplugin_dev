@@ -12,6 +12,9 @@ set(plug_sources
     source/ggcprocessor.cpp
 	source/WavUtils.cpp
     resource/celestion_v30_48kHz_200ms.data
+    resource/412_sm57_off_axis_44100Hz.data
+    resource/412_sm57_on_axis1_44100Hz.data
+    resource/412_sm57_on_axis2_44100Hz.data
     WDL/convoengine.h
     WDL/denormal.h
     WDL/fastqueue.h

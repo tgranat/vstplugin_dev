@@ -23,9 +23,14 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_1ch_200ms =
+//const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_1ch_200ms =
+//{
+//	#include "../resource/celestion_v30_48kHz_200ms.data"
+//};
+
+const std::vector<float> GgcProcessor::m412_sm57_off_axis_44100Hz_1ch =
 {
-	#include "../resource/celestion_v30_48kHz_200ms.data"
+	#include "../resource/412_sm57_off_axis_44100Hz.data"
 };
 
 GgcProcessor::GgcProcessor ()
@@ -429,16 +434,57 @@ void GgcProcessor::initiateConvolutionEngine()
 	//}
 
 	// End of out-commented read file part
-	
-	// SetLength creates IR buffer 
-	int irFrames = mCelestian_v30_48kHz_1ch_200ms.size();
-	mImpulse.SetLength((int)irFrames);
-	// Load IR
-	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-	for (int i = 0; i < irFrames; ++i) {
-		dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_1ch_200ms[i];
-	}
+		
+	SampleRate irSampleRate = 44100.f;
+	int irLength = m412_sm57_off_axis_44100Hz_1ch.size();
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
+	int destLength = mIncomingAudioSampleRate / irSampleRate * (double)irLength + 0.5;
+	mImpulse.SetLength((int)destLength);
+
+	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+
+	if (mIncomingAudioSampleRate != irSampleRate) {
+		// Resample using linear interpolation.
+		// Might try with WDL resampler that uses windowed sinc resampling but not sure
+		// if necessary when resampling IR files
+		double pos = 0.;
+		double delta = irSampleRate / mIncomingAudioSampleRate;
+		for (int i = 0; i < destLength; ++i)
+		{
+			int idx = int(pos);
+			if (idx < irLength)
+			{
+				double frac = pos - floor(pos);
+				double interp = (1. - frac) * m412_sm57_off_axis_44100Hz_1ch[idx];
+				if (++idx < irLength) 
+					interp += frac * m412_sm57_off_axis_44100Hz_1ch[idx];
+				pos += delta;
+				*dest++ = (WDL_FFT_REAL)(delta * interp);
+			}
+			else
+			{
+				*dest++ = 0;
+			}
+		}
+
+	}
+	else {
+		for (int i = 0; i < irLength; ++i) {
+			dest[i] = (WDL_FFT_REAL)m412_sm57_off_axis_44100Hz_1ch[i];
+		}
+	}
+
+	//mImpulse.SetLength((int)irFrames);
+	// Load IR
+	//WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+	// No resampling needed
+	//for (int i = 0; i < irLength; ++i) {
+	//	dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_1ch_200ms[i];
+	//}
+
+
+
+	
 
 	// Perhaps not necessary. Clears out samples in convolution engine.
 	mEngine.Reset();
