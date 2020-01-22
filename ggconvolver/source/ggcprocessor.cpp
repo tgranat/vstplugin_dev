@@ -25,7 +25,7 @@ namespace GgConvolver {
 
 const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_1ch_200ms =
 {
-	#include "../include/celestion_v30_48kHz_200ms.h"
+	#include "../resource/celestion_v30_48kHz_200ms.data"
 };
 
 GgcProcessor::GgcProcessor ()

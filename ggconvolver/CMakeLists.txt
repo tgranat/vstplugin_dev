@@ -6,13 +6,12 @@ set(plug_sources
     include/ggcprocessor.h
     include/version.h
 	include/WavUtils.h
-	include/celestion_v30_48kHz_200ms.h
-    include/celestion_v60_412_room_48kHz_1ch_200ms.h
     source/dbparameter.cpp
     source/ggcfactory.cpp
     source/ggccontroller.cpp
     source/ggcprocessor.cpp
 	source/WavUtils.cpp
+    resource/celestion_v30_48kHz_200ms.data
     WDL/convoengine.h
     WDL/denormal.h
     WDL/fastqueue.h
