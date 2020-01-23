@@ -84,55 +84,14 @@ tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 {
 	mIncomingAudioSampleRate = setup.sampleRate;
 
-
 	return AudioEffect::setupProcessing (setup);
 }
 
 tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
-	// TODO:
-
-// - Implement re-sample of the IR file.
-// - IR file name configurable. Or something
-	// How can IR files be loaded dynamically?
-
 	if (state) // Activate
 	{
-		initiateConvolutionEngine();
-
-
-		/*
-		//const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/Studio_Nord_Plate_3sec.wav";
-		const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
-		//	const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_96kHz_500ms.wav";
-		// audioRead reads into a float (32 bit)
-		// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
-		std::vector<float> irBuffer;
-		int sampleRateIRFile;
-		int numChannels;
-
-		audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
-		size_t irFrames = irBuffer.size();
-
-		if (mIncomingAudioSampleRate != sampleRateIRFile) {
-			// Resample IR
-		}
-		// 
-		// SetLength creates IR buffer 
-		mImpulse.SetLength((int)irFrames);
-		// Load IR
-		WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-		for (int i = 0; i < irFrames; ++i) {
-			dest[i] = (WDL_FFT_REAL)irBuffer[i];
-		}
-		mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
-
-		// Perhaps not necessary. Clears out samples in convolution engine.
-		mEngine.Reset();
-		// Tie IR to convolution engine
-		// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
-		mEngine.SetImpulse(&mImpulse);
-		*/
+		initiateConvolutionEngine(m412_sm57_off_axis_44100Hz_1ch, 44100.f);
 	}
 	else // Deactivate
 	{
@@ -450,7 +409,7 @@ void GgcProcessor::resample(const I* source, int sourceLength, double sourceSamp
 // Initiate the convolution engine:
 //   Create a WDL_ImpulseBuffer and load a (resampled if needed) impulse response
 //   Create a WDL_ConvolutionEngine_Div
-void GgcProcessor::initiateConvolutionEngine()
+void GgcProcessor::initiateConvolutionEngine(const std::vector<float> impulseResponse, SampleRate irSampleRate)
 {
 	// This part is if you read from file
 
@@ -469,9 +428,7 @@ void GgcProcessor::initiateConvolutionEngine()
 
 	// End of out-commented read file part
 		
-	// IR is hard coded at the moment
-	SampleRate irSampleRate = 44100.f;
-	int irLength = m412_sm57_off_axis_44100Hz_1ch.size();
+	int irLength = impulseResponse.size();
 
 	// Initiate buffer where impulse response will be stored
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
@@ -483,7 +440,7 @@ void GgcProcessor::initiateConvolutionEngine()
 	WDL_FFT_REAL* target = mImpulse.impulses[0].Get();
 
 	// Write impulse response to buffer. If different sample rates, data will be resampled first
-	resample(m412_sm57_off_axis_44100Hz_1ch.data(), irLength, irSampleRate, target, mIncomingAudioSampleRate);
+	resample(impulseResponse.data(), irLength, irSampleRate, target, mIncomingAudioSampleRate);
 
 	// Perhaps not necessary? Clears out samples in convolution engine.
 	mEngine.Reset();

@@ -49,7 +49,7 @@ protected:
 
 
 private:
-	void initiateConvolutionEngine();
+	void initiateConvolutionEngine(const std::vector<float> impulseResponse, SampleRate irSampleRate);
 
 	template <class I, class O>
 		void resample(const I* source, int sourceLength, double sourceSampleRate, O* target, double targetSampleRate);
