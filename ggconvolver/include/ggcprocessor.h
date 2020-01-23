@@ -40,7 +40,6 @@ public:
 protected:
 	WDL_ImpulseBuffer mImpulse;
 	WDL_ConvolutionEngine_Div mEngine;
-	WDL_Resampler mResampler;
 	float mLevel = 0.5f;
 	float mPregain = 0.5f;
 	bool mBypass = false; 
@@ -51,6 +50,9 @@ protected:
 
 private:
 	void initiateConvolutionEngine();
+
+	template <class I, class O>
+		void resample(const I* source, int sourceLength, double sourceSampleRate, O* target, double targetSampleRate);
 
 	static const std::vector<float> mCelestian_v30_48kHz_1ch_200ms;
 	static const std::vector<float> m412_sm57_off_axis_44100Hz_1ch;

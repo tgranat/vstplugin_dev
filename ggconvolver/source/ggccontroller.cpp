@@ -24,7 +24,7 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 
 		// Level parameter
 		// Use own DbParameter class that display dB values for level instead of the range 0 to 1
-		// parameters.addParameter can also take a Parameter*
+		// parameters.addParameter also takes a Parameter*
 
 		auto* pregainParam = new DbParameter(Vst::ParameterInfo::kCanAutomate, kParamPregainId, 2.0);
 		parameters.addParameter(pregainParam);

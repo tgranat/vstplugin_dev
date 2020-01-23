@@ -168,14 +168,14 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					case GgConvolverParams::kParamLevelId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mLevel = (float)value * 2.0f;  
+							mLevel = (float)value;  
 						break;
 
 					case GgConvolverParams::kParamPregainId:
 						// initiateConvolutionEngine(); // TEST init IR in process()
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mPregain = (float)value * 2.0f;
+							mPregain = (float)value;
 						break;
 
 					/*
@@ -410,10 +410,48 @@ tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 	return kResultOk;
 }
 
+// Resamples (unless sample rates are equal) using linear interpolation
+template <class I, class O>
+void GgcProcessor::resample(const I* source, int sourceLength, double sourceSampleRate, O* target, double targetSampleRate)
+{
+	if (sourceSampleRate != targetSampleRate) {
+		// Resample using linear interpolation.
+		double pos = 0.;
+		double delta = sourceSampleRate / targetSampleRate;
+		int targetLength = targetSampleRate / sourceSampleRate * (double)sourceLength + 0.5;
+		for (int i = 0; i < targetLength; ++i)
+		{
+			int idx = int(pos);
+			if (idx < sourceLength)
+			{
+				double frac = pos - floor(pos);
+				double interp = (1. - frac) * source[idx];
+				if (++idx < sourceLength) {
+					interp += frac * source[idx];
+				}
+				pos += delta;
+				*target++ = (O)(delta * interp);
+			}
+			else
+			{
+				*target++ = 0;
+			}
+		}
+
+	}
+	else {
+		// No need for resample
+		for (int i = 0; i < sourceLength; ++i) {
+			target[i] = (O)source[i];
+		}
+	}
+}
+
+// Initiate the convolution engine:
+//   Create a WDL_ImpulseBuffer and load a (resampled if needed) impulse response
+//   Create a WDL_ConvolutionEngine_Div
 void GgcProcessor::initiateConvolutionEngine()
 {
-	// if IR is reloaded, is it enough to just update the buffer in mImpulse? It should be
-
 	// This part is if you read from file
 
 	// const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
@@ -429,67 +467,27 @@ void GgcProcessor::initiateConvolutionEngine()
 	//audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
 	//size_t irFrames = irBuffer.size();
 
-	//if (mIncomingAudioSampleRate != sampleRateIRFile) {
-		// Resample IR
-	//}
-
 	// End of out-commented read file part
 		
+	// IR is hard coded at the moment
 	SampleRate irSampleRate = 44100.f;
 	int irLength = m412_sm57_off_axis_44100Hz_1ch.size();
+
+	// Initiate buffer where impulse response will be stored
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
+	// SetLength() initiates the buffer
 	int destLength = mIncomingAudioSampleRate / irSampleRate * (double)irLength + 0.5;
 	mImpulse.SetLength((int)destLength);
 
-	WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
+	// Get pointer to buffer where impulse response will be stored
+	WDL_FFT_REAL* target = mImpulse.impulses[0].Get();
 
-	if (mIncomingAudioSampleRate != irSampleRate) {
-		// Resample using linear interpolation.
-		// Might try with WDL resampler that uses windowed sinc resampling but not sure
-		// if necessary when resampling IR files
-		double pos = 0.;
-		double delta = irSampleRate / mIncomingAudioSampleRate;
-		for (int i = 0; i < destLength; ++i)
-		{
-			int idx = int(pos);
-			if (idx < irLength)
-			{
-				double frac = pos - floor(pos);
-				double interp = (1. - frac) * m412_sm57_off_axis_44100Hz_1ch[idx];
-				if (++idx < irLength) 
-					interp += frac * m412_sm57_off_axis_44100Hz_1ch[idx];
-				pos += delta;
-				*dest++ = (WDL_FFT_REAL)(delta * interp);
-			}
-			else
-			{
-				*dest++ = 0;
-			}
-		}
+	// Write impulse response to buffer. If different sample rates, data will be resampled first
+	resample(m412_sm57_off_axis_44100Hz_1ch.data(), irLength, irSampleRate, target, mIncomingAudioSampleRate);
 
-	}
-	else {
-		for (int i = 0; i < irLength; ++i) {
-			dest[i] = (WDL_FFT_REAL)m412_sm57_off_axis_44100Hz_1ch[i];
-		}
-	}
-
-	//mImpulse.SetLength((int)irFrames);
-	// Load IR
-	//WDL_FFT_REAL* dest = mImpulse.impulses[0].Get();
-	// No resampling needed
-	//for (int i = 0; i < irLength; ++i) {
-	//	dest[i] = (WDL_FFT_REAL)mCelestian_v30_48kHz_1ch_200ms[i];
-	//}
-
-
-
-	
-
-	// Perhaps not necessary. Clears out samples in convolution engine.
+	// Perhaps not necessary? Clears out samples in convolution engine.
 	mEngine.Reset();
 	// Tie IR to convolution engine
-	// SetImpulse(WDL_ImpulseBuffer *impulse, int fft_size=-1, int impulse_sample_offset=0, int max_imp_size=0, bool forceBrute=false);
 	mEngine.SetImpulse(&mImpulse);
 }
 
