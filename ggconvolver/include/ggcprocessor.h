@@ -6,10 +6,25 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "../WDL/convoengine.h"
 #include "../WDL/resample.h"
+#include <map>
 
 namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
+
+class ImpulseResponse
+{
+public:
+	ImpulseResponse(std::string desc, SampleRate sampleRate, const std::vector<float> &irData);
+	std::string getDesc();
+	SampleRate getSampleRate();
+	float* getImpulseResponse();
+	int getIrLength();
+private:
+	std::string mDesc;
+	SampleRate mSampleRate;
+	std::vector<float> mIrData;
+};
 
 // Processor part
 class GgcProcessor : public Vst::AudioEffect
@@ -49,13 +64,17 @@ protected:
 
 
 private:
-	void initiateConvolutionEngine(const std::vector<float> impulseResponse, SampleRate irSampleRate);
+	void initiateConvolutionEngine(float* impulseResponse, SampleRate irSampleRate, int irLength);
 
 	template <class I, class O>
-		void resample(const I* source, int sourceLength, double sourceSampleRate, O* target, double targetSampleRate);
+	void resample(const I* source, int sourceLength, double sourceSampleRate, O* target, double targetSampleRate);
 
-	static const std::vector<float> mCelestian_v30_48kHz_1ch_200ms;
+	std::vector <ImpulseResponse> mImpulseResponses;
+
+	static const std::vector<float> m412_sm57_on_axis1_44100Hz_1ch;
+	static const std::vector<float> m412_sm57_on_axis2_44100Hz_1ch;
 	static const std::vector<float> m412_sm57_off_axis_44100Hz_1ch;
+
 
 	static const int mResamplerBlockLength = 64;
 };

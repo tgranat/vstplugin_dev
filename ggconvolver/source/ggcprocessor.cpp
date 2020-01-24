@@ -23,18 +23,53 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-//const std::vector<float> GgcProcessor::mCelestian_v30_48kHz_1ch_200ms =
-//{
-//	#include "../resource/celestion_v30_48kHz_200ms.data"
-//};
+
+
+const std::vector<float> GgcProcessor::m412_sm57_on_axis1_44100Hz_1ch =
+{
+	#include "../resource/412_sm57_on_axis1_44100Hz.data"
+};
+
+const std::vector<float> GgcProcessor::m412_sm57_on_axis2_44100Hz_1ch =
+{
+	#include "../resource/412_sm57_on_axis2_44100Hz.data"
+};
 
 const std::vector<float> GgcProcessor::m412_sm57_off_axis_44100Hz_1ch =
 {
 	#include "../resource/412_sm57_off_axis_44100Hz.data"
 };
 
+
+ImpulseResponse::ImpulseResponse(std::string desc, SampleRate sampleRate, const std::vector<float> &irData)
+{
+	mDesc = desc;
+	mSampleRate = sampleRate;
+	mIrData = irData; 
+}
+
+std::string ImpulseResponse::getDesc() {
+	return mDesc;
+}
+
+SampleRate ImpulseResponse::getSampleRate() {
+	return mSampleRate;
+}
+
+float* ImpulseResponse::getImpulseResponse() {
+	return mIrData.data();
+}
+
+int ImpulseResponse::getIrLength() {
+	return mIrData.size();
+}
+
 GgcProcessor::GgcProcessor ()
 {
+	mImpulseResponses.push_back(ImpulseResponse("412_sm57_off_axis", 44100.f, m412_sm57_off_axis_44100Hz_1ch));
+	mImpulseResponses.push_back(ImpulseResponse("412_sm57_on_axis_1", 44100.f, m412_sm57_on_axis1_44100Hz_1ch));
+	mImpulseResponses.push_back(ImpulseResponse("412_sm57_on_axis_2", 44100.f, m412_sm57_on_axis2_44100Hz_1ch));
+
 	// register its editor class
 	setControllerClass (GgConvolverControllerUID);
 }
@@ -87,15 +122,29 @@ tresult PLUGIN_API GgcProcessor::setupProcessing (ProcessSetup& setup)
 	return AudioEffect::setupProcessing (setup);
 }
 
+// Depends on the VST host, but Reaper does:
+// Add plugin:  
+//              setupProcessing()   (and some other init and setup before that)
+//              setActive(1)        (1 = activate)
+//              setActive(0)
+//              setActive(1)
+// After every time paused:
+//              setActive(0)
+//              setActive(1)
+//              process() .... 
+// Remove plugin:
+//              setActive(0)     
+
 tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 {
+
 	if (state) // Activate
 	{
-		initiateConvolutionEngine(m412_sm57_off_axis_44100Hz_1ch, 44100.f);
+		initiateConvolutionEngine(mImpulseResponses[0].getImpulseResponse(), mImpulseResponses[0].getSampleRate(), mImpulseResponses[0].getIrLength());
 	}
 	else // Deactivate
 	{
-		// 
+		//
 	}
 
 	mVuLevelOld = 0.f;
@@ -152,11 +201,6 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				}
 			}
 		}
-
-
-
-
-
 	}
 
 	// Process Audio
@@ -409,27 +453,9 @@ void GgcProcessor::resample(const I* source, int sourceLength, double sourceSamp
 // Initiate the convolution engine:
 //   Create a WDL_ImpulseBuffer and load a (resampled if needed) impulse response
 //   Create a WDL_ConvolutionEngine_Div
-void GgcProcessor::initiateConvolutionEngine(const std::vector<float> impulseResponse, SampleRate irSampleRate)
+
+void GgcProcessor::initiateConvolutionEngine(float* impulseResponse, SampleRate irSampleRate, int irLength)
 {
-	// This part is if you read from file
-
-	// const char* irFileName = "C:/Users/tobbe/source/my_vstplugins/ggconvolver/resource/IR_test_Celestion_48kHz_200ms.wav";
-	// audioRead reads into a float (32 bit)
-	// We are using WDL_FFT_REAL to decide if we are built as a 32 or 64 bit plugin since we have dependencies to WDL convolver
-	
-	// Assuming only one channel in IR file
-	
-	//std::vector<float> irBuffer;
-	//int sampleRateIRFile;
-	//int numChannels;
-
-	//audioRead(irFileName, irBuffer, sampleRateIRFile, numChannels);
-	//size_t irFrames = irBuffer.size();
-
-	// End of out-commented read file part
-		
-	int irLength = impulseResponse.size();
-
 	// Initiate buffer where impulse response will be stored
 	mImpulse.SetNumChannels(1);  // Not necessary, this is the default value
 	// SetLength() initiates the buffer
@@ -440,14 +466,13 @@ void GgcProcessor::initiateConvolutionEngine(const std::vector<float> impulseRes
 	WDL_FFT_REAL* target = mImpulse.impulses[0].Get();
 
 	// Write impulse response to buffer. If different sample rates, data will be resampled first
-	resample(impulseResponse.data(), irLength, irSampleRate, target, mIncomingAudioSampleRate);
+	resample(impulseResponse, irLength, irSampleRate, target, mIncomingAudioSampleRate);
 
-	// Perhaps not necessary? Clears out samples in convolution engine.
+	// Perhaps not necessary at this point. Clears out samples in convolution engine.
 	mEngine.Reset();
 	// Tie IR to convolution engine
 	mEngine.SetImpulse(&mImpulse);
 }
-
 
 } 
 } 

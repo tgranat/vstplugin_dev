@@ -1,13 +1,15 @@
 # GGConvolver
-A simple VST3 plugin to load a single impulse response file.
+A simple VST3 plugin that has a few hardcoded impulse responses.
 
-Work in progress. IR file hardcoded value.
+### VST3
+
+https://steinbergmedia.github.io/vst3_doc/vstinterfaces/index.html
 
 ### Build
 
 See https://steinbergmedia.github.io/vst3_doc/vstinterfaces/cmakeUse.html
 
-Right now I'm using Visual Studio. To create a VS solution I run:
+So far I have used Visual Studio. To create a VS solution I run:
 ```
 cmake -G"Visual Studio 16 2019" -Ax64 -DSMTG_MYPLUGINS_SRC_PATH=C:/<where I have my source code> ../
 ```
@@ -17,7 +19,7 @@ cmake -G"Visual Studio 16 2019" -Ax64 -DSMTG_MYPLUGINS_SRC_PATH=C:/<where I have
 
 I'm using the WDL convolution engine from https://www.cockos.com/wdl/.
 
-A subset of files copied into this repository from https://github.com/justinfrankel/WDL.
+A subset of WDL files needed have been copied from https://github.com/justinfrankel/WDL.
 
 ```
 Copyright (C) 2005 and later Cockos Incorporated
@@ -40,9 +42,5 @@ Copyright (C) 2005 and later Cockos Incorporated
        misrepresented as being the original software.
     3. This notice may not be removed or altered from any source distribution.
 ```
-### Reading of Wav files
 
-Using code by Gerry Beauregard from his presentation Audio DSP Basics. A simple Wav file read/write utility.
-
-https://www.dropbox.com/s/s0ba5y932glm4ld/2016-06_MusicTech.zip
 
