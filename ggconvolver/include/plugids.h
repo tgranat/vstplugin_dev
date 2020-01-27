@@ -8,11 +8,11 @@ namespace GgConvolver {
 	enum GgConvolverParams : ParamID
 	{
 		kBypassId = 100,
-		kParamLevelId = 101,
-		kParamPregainId = 102,
-		kVuLevelId = 103,
-		kVuPregainId = 104
-		//kParamOnId = 1000
+		kParamImpulseResponse,
+		kParamLevelId,
+		kParamPregainId,
+		kVuLevelId,
+		kVuPregainId
 	};
 
 	// Unique class ids for processor and for controller

@@ -172,7 +172,19 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				int32 sampleOffset;
 				int32 numPoints = paramQueue->getPointCount();
 				switch (paramQueue->getParameterId())
-				{					
+				{		
+					case GgConvolverParams::kBypassId:
+						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
+							kResultTrue)
+							mBypass = (value > 0.5f);
+						break;
+
+					case GgConvolverParams::kParamImpulseResponse:
+						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
+							kResultTrue)
+							mImpulseResponse = (float)value;
+						break;
+
 					case GgConvolverParams::kParamLevelId:
 						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
@@ -180,24 +192,11 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 						break;
 
 					case GgConvolverParams::kParamPregainId:
-						// initiateConvolutionEngine(); // TEST init IR in process()
+
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
 							mPregain = (float)value;
-						break;
-
-					/*
-					case TestPluginParams::kParamOnId:
-						if (paramQueue->getPoint (numPoints - 1, sampleOffset, value) ==
-							kResultTrue)
-							mParam2 = value > 0 ? 1 : 0;
-						break;
-					*/
-					case GgConvolverParams::kBypassId:
-						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
-							kResultTrue)
-							mBypass = (value > 0.5f);
-						break;
+						break;	
 				}
 			}
 		}
@@ -323,7 +322,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 							vuPregain = tmp;
 						}
 
-						// apply gain
+						// apply out level
 
 						tmp = (*ptrConvolved++) * mLevel;
 						(*ptrOut++) = tmp;
@@ -373,10 +372,19 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 	if (!state)
 		return kResultFalse;
 
-	// called when we load a preset or project, the model has to be reloaded
+	// Called when we load a preset or project, the model has to be reloaded
+	// Has to be in the correct order! See implemantation of setComponentState() in controller part.
 
 	IBStreamer streamer (state, kLittleEndian);
 	
+	int32 savedBypass = 0;
+	if (streamer.readInt32(savedBypass) == false)
+		return kResultFalse;
+
+	float savedImpulseResponse = 0.f;
+	if (streamer.readFloat(savedImpulseResponse) == false)
+		return kResultFalse;
+
 	float savedLevel = 0.f;
 	if (streamer.readFloat (savedLevel) == false)
 		return kResultFalse;
@@ -385,10 +393,7 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 	if (streamer.readFloat(savedPregain) == false)
 		return kResultFalse;
 
-	int32 savedBypass = 0;
-	if (streamer.readInt32 (savedBypass) == false)
-		return kResultFalse;
-
+	mImpulseResponse = savedImpulseResponse;
 	mLevel = savedLevel;
 	mPregain = savedPregain;
 	mBypass = savedBypass > 0;
@@ -398,17 +403,20 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 
 tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 {
-	// here we need to save the model (preset or project)
+	// Save the model (preset or project)
 
 	float toSaveLevel = mLevel;
 	float toSavePregain = mPregain;
 	int32 toSaveBypass = mBypass ? 1 : 0;
+	float toSaveImpulseResponse = mImpulseResponse;
 
 	IBStreamer streamer (state, kLittleEndian);
 
+	// Has to be in the correct order! See implemantation of setComponentState() in controller part.
+	streamer.writeInt32(toSaveBypass);
+	streamer.writeFloat(toSaveImpulseResponse);
 	streamer.writeFloat (toSaveLevel);
 	streamer.writeFloat(toSavePregain);
-	streamer.writeInt32 (toSaveBypass);
 
 	return kResultOk;
 }

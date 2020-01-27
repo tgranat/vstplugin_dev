@@ -55,13 +55,16 @@ public:
 protected:
 	WDL_ImpulseBuffer mImpulse;
 	WDL_ConvolutionEngine_Div mEngine;
-	float mLevel = 0.5f;
-	float mPregain = 0.5f;
-	bool mBypass = false; 
+
 	SampleRate mIncomingAudioSampleRate = 48000.f;
 	float mVuLevelOld = 0.f;
 	float mVuPregainOld = 0.f;
 
+	// Parameters
+	float mImpulseResponse = 0.f;
+	float mLevel = 0.5f;
+	float mPregain = 0.5f;
+	bool mBypass = false; 
 
 private:
 	void initiateConvolutionEngine(float* impulseResponse, SampleRate irSampleRate, int irLength);
