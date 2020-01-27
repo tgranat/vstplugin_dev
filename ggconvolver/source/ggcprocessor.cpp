@@ -140,6 +140,7 @@ tresult PLUGIN_API GgcProcessor::setActive (TBool state)
 
 	if (state) // Activate
 	{
+		mCurrentImpulseResponse = 0;
 		initiateConvolutionEngine(mImpulseResponses[0].getImpulseResponse(), mImpulseResponses[0].getSampleRate(), mImpulseResponses[0].getIrLength());
 	}
 	else // Deactivate
@@ -182,7 +183,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					case GgConvolverParams::kParamImpulseResponse:
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mImpulseResponse = int32(value * (mNbrOfImpulseResponses - 1) + 0.5);
+							mImpulseResponse = int32(value * ((ParamValue)mNbrOfImpulseResponses - 1) + 0.5);
 						break;
 
 					case GgConvolverParams::kParamLevelId:
@@ -284,6 +285,13 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 			}
 			else {
 				// Process the data
+				// If IR has changed, re-initiate convolution engine
+				if (mCurrentImpulseResponse != mImpulseResponse) {
+					initiateConvolutionEngine(mImpulseResponses[mImpulseResponse].getImpulseResponse(),
+						mImpulseResponses[mImpulseResponse].getSampleRate(),
+						mImpulseResponses[mImpulseResponse].getIrLength());
+					mCurrentImpulseResponse = mImpulseResponse;
+				}
 				int32 samples = data.numSamples;
 				// Pre-gain adjust. Using output buffer as temporary buffer
 				for (int32 i = 0; i < numChannels; i++)
@@ -414,7 +422,7 @@ tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 
 	// Has to be in the correct order! See implemantation of setComponentState() in controller part.
 	streamer.writeInt32(toSaveBypass);
-	streamer.writeFloat(toSaveImpulseResponse);
+	streamer.writeInt32(toSaveImpulseResponse);
 	streamer.writeFloat (toSaveLevel);
 	streamer.writeFloat(toSavePregain);
 

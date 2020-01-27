@@ -25,9 +25,9 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		// Impulse response parameter
 		auto* irList = new StringListParameter(STR16("ImpulseResponse"), kParamImpulseResponse);
 
-		irList->appendString(STR16("412_sm57_off_axis"));
-		irList->appendString(STR16("412_sm57_on_axis_1"));
-		irList->appendString(STR16("412_sm57_on_axis_2"));
+		irList->appendString(STR16("4x12_sm57_1"));
+		irList->appendString(STR16("4x12_sm57_2"));
+		irList->appendString(STR16("4x12_sm57_3"));
 		parameters.addParameter(irList);
 		
 		irList->setNormalized(0.f);
@@ -77,7 +77,7 @@ tresult PLUGIN_API GgcController::setComponentState(IBStream* state)
 	if (streamer.readInt32(savedImpulseResponse) == false) {
 		return kResultFalse;
 	}
-	setParamNormalized(kParamImpulseResponse, savedImpulseResponse/(3-1));   // 3 is number of IR. Where should we set the constant? controller or processor?
+	setParamNormalized(kParamImpulseResponse, savedImpulseResponse / (3-1));
 
 	float savedLevel = 0.f;
 	if (streamer.readFloat(savedLevel) == false) {

@@ -59,6 +59,7 @@ protected:
 	SampleRate mIncomingAudioSampleRate = 48000.f;
 	float mVuLevelOld = 0.f;
 	float mVuPregainOld = 0.f;
+	int32 mCurrentImpulseResponse = 0;
 
 	// Parameters
 	int32 mImpulseResponse = 0;
