@@ -81,7 +81,8 @@ private:
 
 
 	static const int mResamplerBlockLength = 64;
-	static const int32 mNbrOfImpulseResponses = 3;
+
+	static const int32 mNbrOfImpulseResponses;
 };
 }
 }

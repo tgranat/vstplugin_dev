@@ -23,6 +23,8 @@ public:
 	tresult PLUGIN_API initialize(FUnknown* context) SMTG_OVERRIDE;
 	tresult PLUGIN_API setComponentState(IBStream* state) SMTG_OVERRIDE;
 	IPlugView* PLUGIN_API createView(const char* name) SMTG_OVERRIDE;
+private:
+	int32 mNumberOfIRs;
 };
 }
 }

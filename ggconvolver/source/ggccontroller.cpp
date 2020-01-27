@@ -25,11 +25,13 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		// Impulse response parameter
 		auto* irList = new StringListParameter(STR16("ImpulseResponse"), kParamImpulseResponse);
 
-		irList->appendString(STR16("4x12_sm57_1"));
-		irList->appendString(STR16("4x12_sm57_2"));
-		irList->appendString(STR16("4x12_sm57_3"));
+		irList->appendString(STR16("4x12 SM57 off-axis"));
+		irList->appendString(STR16("4x12 SM57 on-axis #1"));
+		irList->appendString(STR16("4x12 SM57 on-axis #2"));
+		// Number of IRs is used in setComponentState() when normalizing. Update if IRs are added.
+		mNumberOfIRs = 3;
+
 		parameters.addParameter(irList);
-		
 		irList->setNormalized(0.f);
 
 		// Level parameter
@@ -51,7 +53,6 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		parameters.addParameter(STR16("VuPregain"), nullptr, stepCount, defaultVal, flags, tag);
 
 		parameters.addParameter(STR16("VuLevel"), nullptr, 0, 0, ParameterInfo::kIsReadOnly, kVuLevelId);
-
 	}
 	return kResultTrue;
 }
@@ -77,7 +78,7 @@ tresult PLUGIN_API GgcController::setComponentState(IBStream* state)
 	if (streamer.readInt32(savedImpulseResponse) == false) {
 		return kResultFalse;
 	}
-	setParamNormalized(kParamImpulseResponse, savedImpulseResponse / (3-1));
+	setParamNormalized(kParamImpulseResponse, savedImpulseResponse / (mNumberOfIRs - 1));
 
 	float savedLevel = 0.f;
 	if (streamer.readFloat(savedLevel) == false) {

@@ -40,6 +40,9 @@ const std::vector<float> GgcProcessor::m412_sm57_off_axis_44100Hz_1ch =
 	#include "../resource/412_sm57_off_axis_44100Hz.data"
 };
 
+// Update if IRs are added
+const int32 GgcProcessor::mNbrOfImpulseResponses = 3;
+
 
 ImpulseResponse::ImpulseResponse(std::string desc, SampleRate sampleRate, const std::vector<float> &irData)
 {
@@ -456,7 +459,6 @@ void GgcProcessor::resample(const I* source, int sourceLength, double sourceSamp
 				*target++ = 0;
 			}
 		}
-
 	}
 	else {
 		// No need for resample
