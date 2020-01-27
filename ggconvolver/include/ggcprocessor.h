@@ -61,7 +61,7 @@ protected:
 	float mVuPregainOld = 0.f;
 
 	// Parameters
-	float mImpulseResponse = 0.f;
+	int32 mImpulseResponse = 0;
 	float mLevel = 0.5f;
 	float mPregain = 0.5f;
 	bool mBypass = false; 
@@ -80,6 +80,7 @@ private:
 
 
 	static const int mResamplerBlockLength = 64;
+	static const int32 mNbrOfImpulseResponses = 3;
 };
 }
 }

@@ -182,7 +182,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 					case GgConvolverParams::kParamImpulseResponse:
 						if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) ==
 							kResultTrue)
-							mImpulseResponse = (float)value;
+							mImpulseResponse = int32(value * (mNbrOfImpulseResponses - 1) + 0.5);
 						break;
 
 					case GgConvolverParams::kParamLevelId:
@@ -381,8 +381,8 @@ tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 	if (streamer.readInt32(savedBypass) == false)
 		return kResultFalse;
 
-	float savedImpulseResponse = 0.f;
-	if (streamer.readFloat(savedImpulseResponse) == false)
+	int32 savedImpulseResponse = 0;
+	if (streamer.readInt32(savedImpulseResponse) == false)
 		return kResultFalse;
 
 	float savedLevel = 0.f;
@@ -408,7 +408,7 @@ tresult PLUGIN_API GgcProcessor::getState (IBStream* state)
 	float toSaveLevel = mLevel;
 	float toSavePregain = mPregain;
 	int32 toSaveBypass = mBypass ? 1 : 0;
-	float toSaveImpulseResponse = mImpulseResponse;
+	int32 toSaveImpulseResponse = mImpulseResponse;
 
 	IBStreamer streamer (state, kLittleEndian);
 

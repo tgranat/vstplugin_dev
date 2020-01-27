@@ -30,7 +30,7 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		irList->appendString(STR16("412_sm57_on_axis_2"));
 		parameters.addParameter(irList);
 		
-		//irList->setNormalized(kIsYetPrefetchable / (kNumPrefetchableSupport - 1));
+		irList->setNormalized(0.f);
 
 		// Level parameter
 		// Use own DbParameter class that display dB values for level instead of the range 0 to 1
@@ -73,11 +73,11 @@ tresult PLUGIN_API GgcController::setComponentState(IBStream* state)
 	}
 	setParamNormalized(kBypassId, bypassState ? 1 : 0);
 
-	float savedImpulseResponse = 0;
-	if (streamer.readFloat(savedImpulseResponse) == false) {
+	int32 savedImpulseResponse = 0;
+	if (streamer.readInt32(savedImpulseResponse) == false) {
 		return kResultFalse;
 	}
-	setParamNormalized(kParamImpulseResponse, savedImpulseResponse);
+	setParamNormalized(kParamImpulseResponse, savedImpulseResponse/(3-1));   // 3 is number of IR. Where should we set the constant? controller or processor?
 
 	float savedLevel = 0.f;
 	if (streamer.readFloat(savedLevel) == false) {
