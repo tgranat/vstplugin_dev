@@ -14,6 +14,7 @@ So far I have used Visual Studio. To create a VS solution I run:
 cmake -G"Visual Studio 16 2019" -Ax64 -DSMTG_MYPLUGINS_SRC_PATH=C:/<where I have my source code> ../
 ```
 
+This plugin is built as 64 bit as default. To build a 32 bit plugin, edit WDL/fft.h and set ``#define WDL_FFT_REALSIZE 4`` (or figure out how to set the variable in the build). This is necessary to tell the WDL code if it's 32 or 64 bit. Also use in ggprocessor.cpp to tell the host if the plugin can handle 64 bit. 
 
 ### WDL Convolution Engine
 
