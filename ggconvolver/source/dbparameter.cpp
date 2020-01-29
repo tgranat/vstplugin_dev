@@ -1,5 +1,6 @@
 #include "../include/dbparameter.h"
 #include <pluginterfaces/base/ustring.h>
+#include <cmath>
 
 namespace Steinberg {
 namespace Vst {
