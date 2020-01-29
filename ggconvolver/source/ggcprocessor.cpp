@@ -316,7 +316,9 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				// Note: Available samples from convolver may be less than input samples
 				// according to convoengine.h. Not sure why or what the result will be.
 
-				int blocksInConvoBuffer = min(mEngine.Avail(samples), samples);
+				// By making type explicit <int> the preprocessor on stops matching to the windows 'min' macro.
+				// Otherwise we get an error here on Windows. std::min necessary on unix
+				int blocksInConvoBuffer = std::min<int>(mEngine.Avail(samples), samples);
 				
 				for (int32 i = 0; i < numChannels; i++)
 				{
