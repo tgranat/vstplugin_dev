@@ -9,10 +9,11 @@ https://steinbergmedia.github.io/vst3_doc/vstinterfaces/index.html
 
 See https://steinbergmedia.github.io/vst3_doc/vstinterfaces/cmakeUse.html
 
-So far I have used Visual Studio. To create a VS solution I run:
+Built with Visual Studio and tested on Windows (with Reaper DAW). To create a VS solution I run:
 ```
 cmake -G"Visual Studio 16 2019" -Ax64 -DSMTG_MYPLUGINS_SRC_PATH=C:/<where I have my source code> ../
 ```
+Also builds on Linux (Ubuntu 18.04), but not fully tested.
 
 This plugin is built as 64 bit as default. To build a 32 bit plugin, edit WDL/fft.h and set ``#define WDL_FFT_REALSIZE 4`` (or figure out how to set the variable in the build).
 
