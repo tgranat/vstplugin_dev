@@ -5,12 +5,10 @@ set(plug_sources
     include/plugids.h
     include/ggcprocessor.h
     include/version.h
-	include/WavUtils.h
     source/dbparameter.cpp
     source/ggcfactory.cpp
     source/ggccontroller.cpp
     source/ggcprocessor.cpp
-	source/WavUtils.cpp
     resource/celestion_v30_48kHz_200ms.data
     resource/412_sm57_off_axis_44100Hz.data
     resource/412_sm57_on_axis1_44100Hz.data
