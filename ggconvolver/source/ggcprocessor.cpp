@@ -23,7 +23,9 @@ namespace Steinberg {
 namespace Vst {
 namespace GgConvolver {
 
-
+// Read IR data. The audio data has been fetched from IR wav files
+// and stored as text in the .data files. The fetching was done using the
+// convert_ir utlity from https://github.com/tgranat/audio_utils
 
 const std::vector<float> GgcProcessor::m412_sm57_on_axis1_44100Hz_1ch =
 {
@@ -322,7 +324,7 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 				// Note: Available samples from convolver may be less than input samples
 				// according to convoengine.h. Not sure why or what the result will be.
 
-				// By making type explicit <int> the preprocessor on stops matching to the windows 'min' macro.
+				// By making type explicit <int> the preprocessor stops matching to the windows 'min' macro.
 				// Otherwise we get an error here on Windows. std::min necessary on unix
 				int blocksInConvoBuffer = std::min<int>(mEngine.Avail(samples), samples);
 				
@@ -385,7 +387,6 @@ tresult PLUGIN_API GgcProcessor::process(Vst::ProcessData& data)
 	return kResultOk;
 }
 
-//------------------------------------------------------------------------
 tresult PLUGIN_API GgcProcessor::setState (IBStream* state)
 {
 	if (!state)
