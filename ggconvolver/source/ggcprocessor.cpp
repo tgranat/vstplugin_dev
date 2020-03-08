@@ -40,8 +40,13 @@ const std::vector<float> GgcProcessor::m412_sm57_off_axis_44100Hz_1ch =
 	#include "../resource/412_sm57_off_axis_44100Hz.data"
 };
 
+const std::vector<float> GgcProcessor::m210combo_center_U906_44100Hz_1ch =
+{
+	#include "../resource/210combo_center_U906_44100Hz.data"
+};
+
 // Update if IRs are added
-const int32 GgcProcessor::mNbrOfImpulseResponses = 3;
+const int32 GgcProcessor::mNbrOfImpulseResponses = 4;
 
 
 ImpulseResponse::ImpulseResponse(std::string desc, SampleRate sampleRate, const std::vector<float> &irData)
@@ -72,6 +77,7 @@ GgcProcessor::GgcProcessor ()
 	mImpulseResponses.push_back(ImpulseResponse("412_sm57_off_axis", 44100.f, m412_sm57_off_axis_44100Hz_1ch));
 	mImpulseResponses.push_back(ImpulseResponse("412_sm57_on_axis_1", 44100.f, m412_sm57_on_axis1_44100Hz_1ch));
 	mImpulseResponses.push_back(ImpulseResponse("412_sm57_on_axis_2", 44100.f, m412_sm57_on_axis2_44100Hz_1ch));
+	mImpulseResponses.push_back(ImpulseResponse("210combo_on_axis_U906", 44100.f, m210combo_center_U906_44100Hz_1ch));
 
 	// register its editor class
 	setControllerClass (GgConvolverControllerUID);

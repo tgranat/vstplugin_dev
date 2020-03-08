@@ -78,7 +78,7 @@ private:
 	static const std::vector<float> m412_sm57_on_axis1_44100Hz_1ch;
 	static const std::vector<float> m412_sm57_on_axis2_44100Hz_1ch;
 	static const std::vector<float> m412_sm57_off_axis_44100Hz_1ch;
-
+	static const std::vector<float> m210combo_center_U906_44100Hz_1ch;
 
 	static const int mResamplerBlockLength = 64;
 

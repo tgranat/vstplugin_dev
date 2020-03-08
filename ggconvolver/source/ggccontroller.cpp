@@ -28,8 +28,9 @@ tresult PLUGIN_API GgcController::initialize(FUnknown* context)
 		irList->appendString(STR16("4x12 SM57 off-axis"));
 		irList->appendString(STR16("4x12 SM57 on-axis #1"));
 		irList->appendString(STR16("4x12 SM57 on-axis #2"));
+		irList->appendString(STR16("2x10 Combo U906 on-axis"));
 		// Number of IRs is used in setComponentState() when normalizing. Update if IRs are added.
-		mNumberOfIRs = 3;
+		mNumberOfIRs = 4;
 
 		parameters.addParameter(irList);
 		irList->setNormalized(0.f);
